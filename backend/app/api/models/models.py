@@ -62,7 +62,7 @@ class Transactions(Base):
     status = Column(Integer, nullable=False) # int value (0 = pending, 1 = completed, 2 = declined)
     is_recurring = Column(Boolean,default=False, nullable=False) 
     recurring_interval = Column(Integer) # int value (0 = daily, 1 = weekly, 2 = monthly)
-    is_flagged = Column(Boolean,default=False, nullable=False)
+    is_flagged = Column(Integer, nullable=False)
 
 
 class Categories(Base):
