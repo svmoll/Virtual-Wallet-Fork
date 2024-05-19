@@ -1,76 +1,113 @@
 # Database models
-from sqlalchemy import Column, String, Integer, Float, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Boolean,
+    Text,
+    ForeignKey,
+    DateTime,
+    Date,
+    DECIMAL,
+)
 from sqlalchemy.orm import relationship
-from core.config import Base
+from core.database import Base
 
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    username = Column(String(length=25), unique=True, index=True, nullable=False)
-    password = Column(String(length=200), nullable=False,nullable=False)
-    email = Column(String(length=50), unique=True, index=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(length=25), unique=True, nullable=False)
+    password = Column(String(length=200), nullable=False)
+    email = Column(String(length=50), unique=True, nullable=False)
     phone_number = Column(String(length=100), unique=True, nullable=False)
     photo_path = Column(String(length=300))
     is_admin = Column(Boolean, default=False, nullable=False)
     is_restricted = Column(Boolean, default=False, nullable=False)
 
     user_accounts = relationship("Accounts", back_populates="user")
-    user_contacts = relationship("Contacts", back_populates="user")
+    contacts_as_user = relationship(
+        "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
+    )
+    contacts_as_contact = relationship(
+        "Contact",
+        foreign_keys="[Contact.contact_username]",
+        back_populates="contact_user",
+    )
 
 
 class Contacts(Base):
     __tablename__ = "contacts"
-    user_username = Column(String(length=25),ForeignKey('users.username'), index=True) # ForeignKey ; here it is the user.username not user.id which we are using, isn't it?
-    contact_username = Column(Integer,nullable=False) # Phone number?
+    user_username = Column(
+        String(length=25), ForeignKey("users.username"), primary_key=True
+    )
+    contact_username = Column(
+        String(length=25),
+        ForeignKey("users.username"),
+        primary_key=True,
+    )
 
-    contacts_users = relationship("User", back_populates="contacts", foreign_keys=[user_username])
+    user = relationship(
+        "User", foreign_keys=[user_username], back_populates="contacts_as_user"
+    )
+    contact_user = relationship(
+        "User", foreign_keys=[contact_username], back_populates="contacts_as_contact"
+    )
 
 
 class Accounts(Base):
     __tablename__ = "accounts"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    username = Column(String(length=25), ForeignKey('users.username'), index=True, nullable=False) # ForeignKey
-    balance = Column(Float, default=0.00, nullable=False)
-    is_blocked = Column(Boolean, default=False, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(
+        String(length=25), ForeignKey("users.username"), nullable=False
+    )  # ForeignKey
+    balance = Column(DECIMAL(10, 2), default=0.00, nullable=False)
+    is_blocked = Column(Boolean, default=False)
 
-    accounts_user = relationship("User", back_populates="accounts", foreign_keys=[username])
-    acccounts_cards = relationship("Cards",back_populates="accounts")
+    accounts_user = relationship(
+        "User", back_populates="accounts", foreign_keys=[username]
+    )
+    acccounts_cards = relationship("Cards", back_populates="accounts")
 
 
 class Cards(Base):
     __tablename__ = "cards"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False,) # ForeignKey
-    card_number = Column(String(length=16), unique=True, index=True, nullable=False)
-    expiration_date = Column(DateTime.datetime,index=True, nullable=False) # format in database 'YYYY-MM-DD HH:MM:SS'
-    card_holder = Column(String(length=40),nullable=False)
-    cvv = Column(String(length=3),nullable=False)
-    design_path = Column(String(length=150)) # Nullable=False based on Front end?
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_id = Column(
+        Integer,
+        ForeignKey("accounts.id"),
+        nullable=False,
+    )  # ForeignKey
+    card_number = Column(String(length=16), unique=True, nullable=False)
+    expiration_date = Column(Date, nullable=False)
+    card_holder = Column(String(length=50), nullable=False)
+    cvv = Column(String(length=3), nullable=False)
+    design_path = Column(String(length=150))
 
     cards_accounts = relationship("Accounts", back_populates="cards")
+
 
 class Transactions(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    sender_account = Column(Integer, index=True, nullable=False)
-    receiver_account = Column(Integer, index=True, nullable=False)
-    amount = Column(Float, nullable=False)
-    category_id = Column(Integer, ForeignKey('categories.id'), nullable=False) # ForeignKey 
+    sender_account = Column(Integer, nullable=False)
+    receiver_account = Column(Integer, nullable=False)
+    amount = Column(DECIMAL(10, 2), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     description = Column(Text)
-    transaction_date = Column(DateTime,default=None) # Autopopulates when it is completed.
-    status = Column(Integer, nullable=False) # int value (0 = pending, 1 = completed, 2 = declined)
-    is_recurring = Column(Boolean,default=False, nullable=False) 
-    recurring_interval = Column(Integer) # int value (0 = daily, 1 = weekly, 2 = monthly)
-    is_flagged = Column(Integer, nullable=False)
+    transaction_date = Column(DateTime, default=None)
+    status = Column(
+        Integer, nullable=False, default=0
+    )  # (0 = pending, 1 = completed, 2 = declined)
+    is_recurring = Column(Boolean, default=False, nullable=False)
+    recurring_interval = Column(Integer)  # (0 = daily, 1 = weekly, 2 = monthly)
+    is_flagged = Column(Boolean, default=False, nullable=False)
 
 
 class Categories(Base):
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(length=30), nullable=False)
-    color = Column(String(length=20)) # We can have predefined colours. How do we store them as a data type?
+    color_hex = Column(String(length=7), nullable=False)
 
     categories_transactions = relationship("Transactions", backref="categories")
-
-
