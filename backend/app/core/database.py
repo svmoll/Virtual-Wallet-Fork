@@ -2,7 +2,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-import pymysql
+import pymysql  # only for reqs file purposes, can be deleted later
+import mariadb  # same as above
 from sqlalchemy.sql import text
 
 
@@ -21,6 +22,7 @@ def create_database_if_not_exists():
     # Execute the raw SQL to create the database if it doesn't exist
     with temp_engine.connect() as conn:
         conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name}"))
+
 
 create_database_if_not_exists()
 
