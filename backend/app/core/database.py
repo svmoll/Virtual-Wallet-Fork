@@ -2,22 +2,22 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-# import pymysql  # only for reqs file purposes, can be deleted later
+import pymysql  # only for reqs file purposes, can be deleted later
 import mariadb  # same as above
 from sqlalchemy.sql import text
 
 
 # Database configuration
 db_username = "root"
-db_password = "0666"
+db_password = "new_password"
 db_url = "127.0.0.1:3306"
-db_name = "virtual_wallet_fork"
+db_name = "virtual_wallet1"
 
 
 def create_database_if_not_exists():
     # Connect to the server without specifying a database
     temp_engine = create_engine(
-        f"mariadb+mariadbconnector://{db_username}:{db_password}@{db_url}/"
+        f"mariadb+pymysql://{db_username}:{db_password}@{db_url}/"
     )
     # Execute the raw SQL to create the database if it doesn't exist
     with temp_engine.connect() as conn:
@@ -27,7 +27,7 @@ def create_database_if_not_exists():
 create_database_if_not_exists()
 
 # Connection string for the actual database
-connectionString = f"mariadb+mariadbconnector://{db_username}:{db_password}@{db_url}/{db_name}"
+connectionString = f"mariadb+pymysql://{db_username}:{db_password}@{db_url}/{db_name}"
 
 
 # SQLAlchemy setup
@@ -35,5 +35,3 @@ engine = create_engine(connectionString, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
-
-

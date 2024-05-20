@@ -25,7 +25,8 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     is_restricted = Column(Boolean, default=False, nullable=False)
 
-    user_accounts = relationship("Accounts", back_populates="accounts_user")
+    user_accounts = relationship("Account", back_populates="accounts_user")
+
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
     )
@@ -36,7 +37,7 @@ class User(Base):
     )
 
 
-class Contacts(Base):
+class Contact(Base):
     __tablename__ = "contacts"
     user_username = Column(
         String(length=25), ForeignKey("users.username"), primary_key=True
@@ -55,7 +56,7 @@ class Contacts(Base):
     )
 
 
-class Accounts(Base):
+class Account(Base):
     __tablename__ = "accounts"
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(
@@ -67,10 +68,10 @@ class Accounts(Base):
     accounts_user = relationship(
         "User", back_populates="user_accounts", foreign_keys=[username]
     )
-    accounts_cards = relationship("Cards", back_populates="card_accounts")
+    accounts_cards = relationship("Card", back_populates="cards_accounts")
 
 
-class Cards(Base):
+class Card(Base):
     __tablename__ = "cards"
     id = Column(Integer, primary_key=True, autoincrement=True)
     account_id = Column(
@@ -84,10 +85,10 @@ class Cards(Base):
     cvv = Column(String(length=3), nullable=False)
     design_path = Column(String(length=150))
 
-    cards_accounts = relationship("Accounts", back_populates="accounts_cards")
+    cards_accounts = relationship("Account", back_populates="accounts_cards")
 
 
-class Transactions(Base):
+class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     sender_account = Column(Integer, nullable=False)
@@ -104,10 +105,10 @@ class Transactions(Base):
     is_flagged = Column(Boolean, default=False, nullable=False)
 
 
-class Categories(Base):
+class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(length=30), nullable=False)
     color_hex = Column(String(length=7), nullable=False)
 
-    categories_transactions = relationship("Transactions", backref="categories")
+    categories_transactions = relationship("Transaction", backref="categories")
