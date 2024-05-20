@@ -25,7 +25,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     is_restricted = Column(Boolean, default=False, nullable=False)
 
-    user_accounts = relationship("Accounts", back_populates="user")
+    user_accounts = relationship("Accounts", back_populates="accounts_user")
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
     )
@@ -65,9 +65,9 @@ class Accounts(Base):
     is_blocked = Column(Boolean, default=False)
 
     accounts_user = relationship(
-        "User", back_populates="accounts", foreign_keys=[username]
+        "User", back_populates="user_accounts", foreign_keys=[username]
     )
-    acccounts_cards = relationship("Cards", back_populates="accounts")
+    accounts_cards = relationship("Cards", back_populates="card_accounts")
 
 
 class Cards(Base):
@@ -84,7 +84,7 @@ class Cards(Base):
     cvv = Column(String(length=3), nullable=False)
     design_path = Column(String(length=150))
 
-    cards_accounts = relationship("Accounts", back_populates="cards")
+    cards_accounts = relationship("Accounts", back_populates="accounts_cards")
 
 
 class Transactions(Base):
