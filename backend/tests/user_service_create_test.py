@@ -106,3 +106,5 @@ class UsrServices_Should(unittest.TestCase):
         db.rollback.assert_called_once( )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.detail, "Could not complete registration")
+
+
