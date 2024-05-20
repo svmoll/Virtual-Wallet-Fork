@@ -2,10 +2,8 @@ import asyncio
 import unittest
 from sqlalchemy.orm import Session
 from unittest.mock import patch, Mock, MagicMock, create_autospec
-
-from app.api.routes.users.router import user_router
-from app.api.routes.users.schemas import UserDTO
-from app.api.routes.users.router import register_user
+from backend.app.api.routes.users.router import register_user
+from backend.app.api.routes.users.schemas import UserDTO
 
 
 def fake_user():

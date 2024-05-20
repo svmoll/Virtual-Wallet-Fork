@@ -1,11 +1,13 @@
 import unittest
 from unittest.mock import patch, Mock, create_autospec
-from app.api.models.models import User
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from app.api.routes.users.schemas import UserDTO
-from app.api.routes.users.service import create
+
+from backend.app.api.models.models import User
+from backend.app.api.routes.users.schemas import UserDTO
+from backend.app.api.routes.users.service import create
 
 
 def fake_user_dto():
