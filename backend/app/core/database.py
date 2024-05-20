@@ -11,7 +11,7 @@ from sqlalchemy.sql import text
 db_username = "root"
 db_password = "new_password"
 db_url = "127.0.0.1:3306"
-db_name = "virtual_wallet"
+db_name = "virtual_wallet1"
 
 
 def create_database_if_not_exists():
