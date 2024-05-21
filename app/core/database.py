@@ -9,7 +9,7 @@ from sqlalchemy.sql import text
 
 # Database configuration
 db_username = "root"
-db_password = "new_password"
+db_password = "master"
 db_url = "127.0.0.1:3306"
 db_name = "virtual_wallet1"
 
