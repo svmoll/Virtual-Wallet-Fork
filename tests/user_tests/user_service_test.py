@@ -1,8 +1,8 @@
 import unittest
-from unittest.mock import patch, Mock, create_autospec
+from unittest.mock import patch, Mock, create_autospec, MagicMock
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
 from app.api.models.models import User
@@ -20,8 +20,10 @@ def fake_user_dto():
         is_admin=False,
         is_restricted=False
     )
+
+Session = sessionmaker()
 def fake_db():
-    return create_autospec(get_db)
+    return MagicMock(spec=Session)
 
 class UsrServices_Should(unittest.TestCase):
 
@@ -29,8 +31,8 @@ class UsrServices_Should(unittest.TestCase):
     def test_create_returnscorrectUserWhenInoIsCorrect(self, hash_pass_mock):
         hash_pass_mock.return_value = "hashed_password"
         user = fake_user_dto()
-        db = create_autospec(Session)
-        #db = fake_db()
+        #db = create_autospec(Session)
+        db = fake_db()
         db.add = Mock()
         db.commit = Mock()
         db.refresh = Mock()
@@ -51,8 +53,8 @@ class UsrServices_Should(unittest.TestCase):
 
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
-        db = create_autospec(Session)
-        #db = fake_db()
+        #db = create_autospec(Session)
+        db = fake_db()
         db.add = Mock()
         db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry 'tester' for key 'username'"))
         db.rollback = Mock()
@@ -68,8 +70,8 @@ class UsrServices_Should(unittest.TestCase):
     def test_create_returnsCorrectErrorWhenPhoneNumberExists(self, hash_pass_mock):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        db = create_autospec(Session)
-        #db = fake_db()
+        #db = create_autospec(Session)
+        db = fake_db()
         db.add = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry '1234567890' for key 'phone_number'"))
@@ -85,8 +87,8 @@ class UsrServices_Should(unittest.TestCase):
     def test_create_returnsCorrectErrorWhenEmailExists(self, hash_pass_mock):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        db = create_autospec(Session)
-        #db = fake_db()
+        #db = create_autospec(Session)
+        db = fake_db()
         db.add = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock( ), Mock( ), "Duplicate entry 'email@example.com' for key 'email'"))
@@ -103,8 +105,8 @@ class UsrServices_Should(unittest.TestCase):
     def test_create_returnsCorrectErrorWhenInvalidDataIsPutSomehow(self, hash_pass_mock):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        db = create_autospec(Session)
-        #db = fake_db()
+        #db = create_autospec(Session)
+        db = fake_db()
         db.add = Mock( )
         db.commit = Mock(side_effect=IntegrityError(Mock( ), Mock( ), "Some other integrity error"))
         db.rollback = Mock( )

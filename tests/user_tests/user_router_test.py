@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch, Mock, MagicMock, create_autospec
 from app.api.routes.users.router import register_user
 from app.api.routes.users.schemas import UserDTO
@@ -16,6 +16,9 @@ def fake_user():
             is_restricted=False
         )
 
+Session = sessionmaker()
+def fake_db():
+    return MagicMock(spec=Session)
 
 
 class UserRouter_Should(unittest.TestCase):
@@ -25,7 +28,7 @@ class UserRouter_Should(unittest.TestCase):
     def test_registerUser_IsSuccessful(self, create_mock):
 
         user = fake_user()
-        db = create_autospec(Session)
+        db = fake_db()
         create_mock.return_value = user
 
         async def async_test():
