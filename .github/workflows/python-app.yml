@@ -14,30 +14,8 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql-latest
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: test_db
-        options: >-
-          --health-cmd "mysqladmin ping --silent"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-
     steps:
     - uses: actions/checkout@v4
-
-    - name: Wait for MySQL to be ready
-      run: |
-        until mysqladmin ping -h"127.0.0.1" --silent; do
-          echo 'waiting for mysql to be connectable...'
-          sleep 3
-        done
-
     - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
@@ -53,19 +31,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
     - name: Test with unittest
-      env:
-        DB_HOST: 127.0.0.1
-        DB_USER: root
-        DB_PASSWORD: root_password
-        DB_NAME: test_db
       run: |
-        python -m unittest discover tests/user_tests "*_test.py"
+        python -m unittest discover backend/tests/user_tests "*_test.py"
+
