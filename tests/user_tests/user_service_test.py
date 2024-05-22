@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
-from app.api.models.models import User
+from app.api.models.models import Base, User
 from app.api.routes.users.schemas import UserDTO
 from app.api.routes.users.service import create
 from app.api.utils.db_dependency import get_db

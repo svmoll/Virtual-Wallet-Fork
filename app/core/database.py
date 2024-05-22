@@ -1,17 +1,16 @@
 # Connection to the database
+import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-import pymysql  # only for reqs file purposes, can be deleted later
-import mariadb  # same as above
+from sqlalchemy.orm import declarative_base, sessionmaker
+import mariadb  # for reqs file
+import pymysql  # for reqs file
 from sqlalchemy.sql import text
 
-
-# Database configuration
-db_username = "root"
-db_password = "master"
-db_url = "127.0.0.1:3306"
-db_name = "virtual_wallet1"
+# Database configuration from environment variables
+db_username = os.getenv("DB_USERNAME", "root")
+db_password = os.getenv("DB_PASSWORD", "master")
+db_url = os.getenv("DB_URL", "127.0.0.1:3306")
+db_name = os.getenv("DB_NAME", "virtual_wallet1")
 
 
 def create_database_if_not_exists():
@@ -28,7 +27,6 @@ create_database_if_not_exists()
 
 # Connection string for the actual database
 connectionString = f"mariadb+pymysql://{db_username}:{db_password}@{db_url}/{db_name}"
-
 
 # SQLAlchemy setup
 engine = create_engine(connectionString, echo=False)
