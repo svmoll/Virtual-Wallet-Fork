@@ -31,3 +31,12 @@ class UserDTO(BaseModel):
     is_admin: bool = False
     is_restricted: bool = False
 
+
+class UserViewDTO:
+    def __init__(self, id: int, username: str):
+        self.id = id
+        self.username = username
+
+    @classmethod
+    def from_query_result(cls, id, username):
+        return cls(id, username)

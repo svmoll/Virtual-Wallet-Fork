@@ -28,7 +28,7 @@ def fake_db():
 class UsrServices_Should(unittest.TestCase):
 
     @patch('app.api.routes.users.service.hash_pass')
-    def test_create_returnscorrectUserWhenInoIsCorrect(self, hash_pass_mock):
+    def test_create_returnsCorrectUserWhenInoIsCorrect(self, hash_pass_mock):
         #Arrange
         hash_pass_mock.return_value = "hashed_password"
         user = fake_user_dto()
