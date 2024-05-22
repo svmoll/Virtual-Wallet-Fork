@@ -44,6 +44,7 @@ class Authentication_Should(unittest.TestCase):
         mock_user.password = 'hashedpassword'
         db.execute = Mock()
         db.select = Mock()
+        db.select.where = Mock()
 
         mock_hash_pass.return_value = 'hashedpassword'
         db.select.return_value.where.return_value = 'mocked statement'
