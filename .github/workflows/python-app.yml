@@ -2,36 +2,69 @@ name: Python application
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.8.2
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    env:
+      DB_USERNAME: test_user
+      DB_PASSWORD: test_password
+      DB_URL: 127.0.0.1:3306
+      DB_NAME: test_db
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
         python-version: "3.12"
+
+    - name: Install MariaDB Connector/C
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libmariadb-dev
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install cryptography
+
     - name: Lint with flake8
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Create database if not exists
+      run: |
+        python -c "from app.core.database import create_database_if_not_exists; create_database_if_not_exists()"
+
     - name: Test with unittest
       run: |
-        python -m unittest discover backend/tests "*_test.py"
-
+        python -m unittest discover -s tests/user_tests -p "*_test.py"
+        python -m unittest discover -s tests/auth -p "*_test.py"    
