@@ -26,16 +26,15 @@ class UserRouter_Should(unittest.TestCase):
 
     @patch('app.api.routes.users.service.create')
     def test_registerUser_IsSuccessful(self, create_mock):
-
+        #arrange
         user = fake_user()
         db = fake_db()
         create_mock.return_value = user
-
+        # Act
         async def async_test():
             result = await register_user(user, db)
-
+        #Assert
             create_mock.assert_called_once()
-
             expected_result = f"User {user.username} created successfully."
             self.assertEqual(expected_result, result)
 

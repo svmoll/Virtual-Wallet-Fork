@@ -29,15 +29,16 @@ class UsrServices_Should(unittest.TestCase):
 
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnscorrectUserWhenInoIsCorrect(self, hash_pass_mock):
+        #Arrange
         hash_pass_mock.return_value = "hashed_password"
         user = fake_user_dto()
-        #db = create_autospec(Session)
         db = fake_db()
         db.add = Mock()
         db.commit = Mock()
         db.refresh = Mock()
-
+        #Act
         result = create(user, db)
+        #Assert
         db.add.assert_called_once( )
         db.commit.assert_called_once( )
         db.refresh.assert_called_once( )
@@ -50,33 +51,31 @@ class UsrServices_Should(unittest.TestCase):
 
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnsCorrectErrorWhenUsernameExists(self, hash_pass_mock):
-
+        #Arrange
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
-        #db = create_autospec(Session)
         db = fake_db()
         db.add = Mock()
         db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry 'tester' for key 'username'"))
         db.rollback = Mock()
-
+        #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
-
         db.rollback.assert_called_once( )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.detail, "Username already exists")
 
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnsCorrectErrorWhenPhoneNumberExists(self, hash_pass_mock):
+        # Arrange
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        #db = create_autospec(Session)
         db = fake_db()
         db.add = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry '1234567890' for key 'phone_number'"))
         db.rollback = Mock()
-
+        #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
         db.rollback.assert_called_once( )
@@ -85,35 +84,33 @@ class UsrServices_Should(unittest.TestCase):
 
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnsCorrectErrorWhenEmailExists(self, hash_pass_mock):
+        # Arrange
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        #db = create_autospec(Session)
         db = fake_db()
         db.add = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock( ), Mock( ), "Duplicate entry 'email@example.com' for key 'email'"))
         db.rollback = Mock( )
-
+        #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
-
         db.rollback.assert_called_once( )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.detail, "Email already exists")
 
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnsCorrectErrorWhenInvalidDataIsPutSomehow(self, hash_pass_mock):
+        # Arrange
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
-        #db = create_autospec(Session)
         db = fake_db()
         db.add = Mock( )
         db.commit = Mock(side_effect=IntegrityError(Mock( ), Mock( ), "Some other integrity error"))
         db.rollback = Mock( )
-
+        #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
-
         db.rollback.assert_called_once( )
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(context.exception.detail, "Could not complete registration")
