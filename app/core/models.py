@@ -1,6 +1,6 @@
-# Database models
+from datetime import datetime, date
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import (
-    Column,
     String,
     Integer,
     Boolean,
@@ -10,22 +10,28 @@ from sqlalchemy import (
     Date,
     DECIMAL,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, mapped_column
+from sqlalchemy.orm.decl_api import Mapped
+from dataclasses import dataclass
 
-from app.core.database import Base
+Base = declarative_base()
 
 
+@dataclass
 class User(Base):
     __tablename__ = "users"
-    # __table_args__ = {'extend_existing': True}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(length=25), unique=True, nullable=False)
-    password = Column(String(length=200), nullable=False)
-    email = Column(String(length=50), unique=True, nullable=False)
-    phone_number = Column(String(length=100), unique=True, nullable=False)
-    photo_path = Column(String(length=300))
-    is_admin = Column(Boolean, default=False, nullable=False)
-    is_restricted = Column(Boolean, default=False, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(
+        String(length=25), unique=True, nullable=False
+    )
+    password: Mapped[str] = mapped_column(String(length=200), nullable=False)
+    email: Mapped[str] = mapped_column(String(length=50), unique=True, nullable=False)
+    phone_number: Mapped[str] = mapped_column(
+        String(length=100), unique=True, nullable=False
+    )
+    photo_path: Mapped[str] = mapped_column(String(length=300), nullable=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     user_accounts = relationship("Account", back_populates="accounts_user")
 
@@ -39,16 +45,14 @@ class User(Base):
     )
 
 
+@dataclass
 class Contact(Base):
     __tablename__ = "contacts"
-    __table_args__ = {'extend_existing': True}
-    user_username = Column(
+    user_username: Mapped[str] = mapped_column(
         String(length=25), ForeignKey("users.username"), primary_key=True
     )
-    contact_username = Column(
-        String(length=25),
-        ForeignKey("users.username"),
-        primary_key=True,
+    contact_username: Mapped[str] = mapped_column(
+        String(length=25), ForeignKey("users.username"), primary_key=True
     )
 
     user = relationship(
@@ -59,15 +63,15 @@ class Contact(Base):
     )
 
 
+@dataclass
 class Account(Base):
     __tablename__ = "accounts"
-    __table_args__ = {'extend_existing': True}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(
         String(length=25), ForeignKey("users.username"), nullable=False
-    )  # ForeignKey
-    balance = Column(DECIMAL(10, 2), default=0.00, nullable=False)
-    is_blocked = Column(Boolean, default=False)
+    )
+    balance: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0.00, nullable=False)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     accounts_user = relationship(
         "User", back_populates="user_accounts", foreign_keys=[username]
@@ -75,47 +79,53 @@ class Account(Base):
     accounts_cards = relationship("Card", back_populates="cards_accounts")
 
 
+@dataclass
 class Card(Base):
     __tablename__ = "cards"
-    __table_args__ = {'extend_existing': True}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    account_id = Column(
-        Integer,
-        ForeignKey("accounts.id"),
-        nullable=False,
-    )  # ForeignKey
-    card_number = Column(String(length=16), unique=True, nullable=False)
-    expiration_date = Column(Date, nullable=False)
-    card_holder = Column(String(length=50), nullable=False)
-    cvv = Column(String(length=3), nullable=False)
-    design_path = Column(String(length=150))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("accounts.id"), nullable=False
+    )
+    card_number: Mapped[str] = mapped_column(
+        String(length=16), unique=True, nullable=False
+    )
+    expiration_date: Mapped[date] = mapped_column(Date, nullable=False)
+    card_holder: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    cvv: Mapped[str] = mapped_column(String(length=3), nullable=False)
+    design_path: Mapped[str] = mapped_column(String(length=150), nullable=True)
 
     cards_accounts = relationship("Account", back_populates="accounts_cards")
 
 
+@dataclass
 class Transaction(Base):
     __tablename__ = "transactions"
-    __table_args__ = {'extend_existing': True}
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    sender_account = Column(Integer, nullable=False)
-    receiver_account = Column(Integer, nullable=False)
-    amount = Column(DECIMAL(10, 2), nullable=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
-    description = Column(Text)
-    transaction_date = Column(DateTime, default=None)
-    status = Column(
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True, autoincrement=True
+    )
+    sender_account: Mapped[int] = mapped_column(Integer, nullable=False)
+    receiver_account: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
+    category_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("categories.id"), nullable=False
+    )
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    transaction_date: Mapped[datetime] = mapped_column(DateTime, default=None)
+    status: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )  # (0 = pending, 1 = completed, 2 = declined)
-    is_recurring = Column(Boolean, default=False, nullable=False)
-    recurring_interval = Column(Integer)  # (0 = daily, 1 = weekly, 2 = monthly)
-    is_flagged = Column(Boolean, default=False, nullable=False)
+    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    recurring_interval: Mapped[int] = mapped_column(
+        Integer
+    )  # (0 = daily, 1 = weekly, 2 = monthly)
+    is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
+@dataclass
 class Category(Base):
     __tablename__ = "categories"
-    __table_args__ = {'extend_existing': True}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(length=30), nullable=False)
-    color_hex = Column(String(length=7), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(length=30), nullable=False)
+    color_hex: Mapped[str] = mapped_column(String(length=7), nullable=False)
 
     categories_transactions = relationship("Transaction", backref="categories")
