@@ -66,7 +66,7 @@ def from_token(session: Session, token: str) -> UserViewDTO | None:
         return None
 
 
-def get_user_or_raise_401(session: Session, token: Annotated[str, Depends(oauth2_scheme)]):
+def get_user_or_raise_401(session: Session, token: Annotated[str, Depends(oauth2_scheme)]) -> UserViewDTO:
     if is_token_blacklisted(token):
         raise HTTPException(status_code=401, detail="You Are logged out, please log in again to proceed", headers={"WWW-Authenticate": "Bearer"})
     try:

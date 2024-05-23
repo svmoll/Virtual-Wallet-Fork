@@ -32,7 +32,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user = fake_user_dto()
         db = fake_db()
-        db.add = Mock()
+        db.add_all = Mock()
         db.commit = Mock()
         db.refresh = Mock()
 
@@ -40,7 +40,7 @@ class UsrServices_Should(unittest.TestCase):
         result = create(user, db)
 
         #Assert
-        db.add.assert_called_once()
+        db.add_all.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertIsInstance(result, User)
@@ -56,7 +56,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
         db = fake_db()
-        db.add = Mock()
+        db.add_all = Mock()
         db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry 'tester' for key 'username'"))
         db.rollback = Mock()
         #Assert
@@ -72,7 +72,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
         db = fake_db()
-        db.add = Mock( )
+        db.add_all = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry '1234567890' for key 'phone_number'"))
         db.rollback = Mock()
@@ -89,7 +89,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
         db = fake_db()
-        db.add = Mock( )
+        db.add_all = Mock( )
         db.commit = Mock(
             side_effect=IntegrityError(Mock( ), Mock( ), "Duplicate entry 'email@example.com' for key 'email'"))
         db.rollback = Mock( )
@@ -106,7 +106,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto( )
         db = fake_db()
-        db.add = Mock( )
+        db.add_all = Mock( )
         db.commit = Mock(side_effect=IntegrityError(Mock( ), Mock( ), "Some other integrity error"))
         db.rollback = Mock( )
         #Assert

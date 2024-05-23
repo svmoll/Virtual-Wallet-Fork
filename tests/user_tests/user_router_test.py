@@ -2,8 +2,14 @@ import asyncio
 import unittest
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch, Mock, MagicMock, create_autospec
-from app.api.routes.users.router import register_user
+from fastapi.testclient import TestClient
+from app.main import app
+from app.api.auth_service.auth import authenticate_user
+from app.api.routes.users.router import register_user, login
 from app.api.routes.users.schemas import UserDTO
+
+
+client = TestClient(app)
 
 
 def fake_user():
@@ -39,4 +45,42 @@ class UserRouter_Should(unittest.TestCase):
             self.assertEqual(expected_result, result)
 
         asyncio.run(async_test())
-
+    #
+    # @patch("app.api.auth_service.auth")
+    # def test_login_isSuccessful(self, authenticate_mock):
+    #     db = fake_db()
+    #     authenticate_mock.return_value = fake_user()
+    #
+    #     async def async_test():
+    #         result = await login(fake_data, db)
+    #
+    #     asyncio.run(async_test())
+    #
+    # @patch('app.api.auth_service.auth.authenticate_user')
+    # @patch('app.api.auth_service.auth.create_token')
+    # def test_login_success(self, mock_create_token, mock_authenticate_user):
+    #     mock_authenticate_user.return_value = {"username": "valid_user"}
+    #     mock_create_token.return_value = "mock_access_token"
+    #
+    #     response = self.client.post("/login", data={"username": "valid_user"})
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(response.json( ), {"access_token": "mock_access_token", "token_type": "bearer"})
+    #
+    # @patch('app.api.auth_service.auth.authenticate_user')
+    # @patch('app.api.auth_service.auth.create_token')
+    # def test_login_success(self, mock_create_token, mock_authenticate_user):
+    #     # Mock return values
+    #     mock_authenticate_user.return_value = {"username": "valid_user"}
+    #     mock_create_token.return_value = "mock_access_token"
+    #
+    #     # Perform the POST request
+    #     response = client.post("/login", data={"username": "valid_user", "password": "valid_password"})
+    #
+    #     # Assert the response
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(response.json( ), {"access_token": "mock_access_token", "token_type": "bearer"})
+    #
+    #     # Assert that mocks were called with expected arguments
+    #     mock_authenticate_user.assert_called_once_with(MagicMock( ), "valid_user", "valid_password")
+    #     mock_create_token.assert_called_once( )
