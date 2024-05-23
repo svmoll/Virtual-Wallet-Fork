@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from .schemas import UserDTO
-from ...models.models import User
-from ...utils.auth import hash_pass
+from app.core.models import User
+from app.api.auth_service.auth import hash_pass
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 

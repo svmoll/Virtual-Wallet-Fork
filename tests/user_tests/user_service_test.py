@@ -1,14 +1,13 @@
 import unittest
-from unittest.mock import patch, Mock, create_autospec, MagicMock
+from unittest.mock import patch, Mock, MagicMock
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
-from app.api.models.models import Base, User
+from app.core.models import User
 from app.api.routes.users.schemas import UserDTO
 from app.api.routes.users.service import create
-from app.api.utils.db_dependency import get_db
 
 
 def fake_user_dto():
@@ -36,19 +35,21 @@ class UsrServices_Should(unittest.TestCase):
         db.add = Mock()
         db.commit = Mock()
         db.refresh = Mock()
+
         #Act
         result = create(user, db)
+
         #Assert
-        db.add.assert_called_once( )
-        db.commit.assert_called_once( )
-        db.refresh.assert_called_once( )
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
         self.assertIsInstance(result, User)
         self.assertEqual(result.username, "tester")
         self.assertEqual(result.password, "hashed_password")
         self.assertEqual(result.email, "email@example.com")
         self.assertEqual(result.phone_number, "1234567890")
 
-
+# TODO check deep equality
     @patch('app.api.routes.users.service.hash_pass')
     def test_create_returnsCorrectErrorWhenUsernameExists(self, hash_pass_mock):
         #Arrange

@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Query, Header, Body, Depends
-from ...utils.db_dependency import get_db
+from fastapi import APIRouter, Depends
+from app.core.db_dependency import get_db
 from .schemas import CategoryDTO
 from sqlalchemy.orm import Session
 from .service import create_category as cs

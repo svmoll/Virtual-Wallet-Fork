@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from . import service
-from ...utils.db_dependency import get_db
+from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from .schemas import UserDTO
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from core.database import engine
-from api.models import models
+from app.core import models
 from api.routes.categories.router import category_router
 from api.routes.users.router import user_router
 import uvicorn
