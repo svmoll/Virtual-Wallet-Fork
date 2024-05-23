@@ -15,8 +15,6 @@ def create(user: UserDTO, db: Session):
             password=hashed_password,
             email=user.email,
             phone_number=user.phone_number,
-            is_admin=user.is_admin,
-            is_restricted=user.is_restricted
         )
         db.add(new_user)
         db.commit()
@@ -25,10 +23,16 @@ def create(user: UserDTO, db: Session):
     except IntegrityError as e:
         db.rollback()
         if "phone_number" in str(e.orig):
-            raise HTTPException(status_code=400, detail="Phone number already exists") from e
+            raise HTTPException(
+                status_code=400, detail="Phone number already exists"
+            ) from e
         elif "username" in str(e.orig):
-            raise HTTPException(status_code=400, detail="Username already exists") from e
+            raise HTTPException(
+                status_code=400, detail="Username already exists"
+            ) from e
         elif "email" in str(e.orig):
             raise HTTPException(status_code=400, detail="Email already exists") from e
         else:
-            raise HTTPException(status_code=400, detail="Could not complete registration") from e
+            raise HTTPException(
+                status_code=400, detail="Could not complete registration"
+            ) from e

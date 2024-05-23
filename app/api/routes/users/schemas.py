@@ -17,7 +17,8 @@ Temail = Annotated[
 TPassword = Annotated[
     str,
     StringConstraints(
-        strip_whitespace=True, pattern=r'^{8,20}$') # TODO Find a Regex that works with pydantic and meets the cretaria for password
+        strip_whitespace=True, pattern=r"^{8,20}$"
+    ),  # TODO Find a Regex that works with pydantic and meets the cretaria for password
 ]
 
 
@@ -27,9 +28,6 @@ class UserDTO(BaseModel):
     password: str
     email: Temail
     phone_number: str
-    photo_url: str | None = None
-    is_admin: bool = False
-    is_restricted: bool = False
 
 
 class UserViewDTO:

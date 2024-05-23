@@ -1,6 +1,6 @@
 from .schemas import CategoryDTO
 from sqlalchemy.orm import Session
-from app.core.models import Category
+from core.models import Category
 
 
 def create_category(category: CategoryDTO, db: Session):
