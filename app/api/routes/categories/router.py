@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from core.db_dependency import get_db
+from app.core.db_dependency import get_db
 from .schemas import CategoryDTO
 from sqlalchemy.orm import Session
 from .service import create_category as cs
@@ -7,7 +7,7 @@ from .service import create_category as cs
 # from .service import CategoryService
 
 
-category_router = APIRouter(prefix="/categories")
+category_router = APIRouter(prefix="/categories", tags=["Category"])
 
 
 @category_router.post("/")
