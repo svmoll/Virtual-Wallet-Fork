@@ -171,7 +171,7 @@ class Authentication_Should(unittest.TestCase):
 
         token = 'valid_token'
 
-        result = get_user_or_raise_401(db, token)
+        result = get_user_or_raise_401(token, db)
 
         mock_is_token_blacklisted.assert_called_once_with(token)
         mock_is_authenticated.assert_called_once_with(db, token)
@@ -191,7 +191,7 @@ class Authentication_Should(unittest.TestCase):
         token = 'invalid_token'
 
         with self.assertRaises(HTTPException) as context:
-            get_user_or_raise_401(db, token)
+            get_user_or_raise_401(token, db)
 
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "User doesn't exist")
@@ -211,7 +211,7 @@ class Authentication_Should(unittest.TestCase):
         token = 'invalid_token'
 
         with self.assertRaises(HTTPException) as context:
-            get_user_or_raise_401(db, token)
+            get_user_or_raise_401(token, db)
 
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "Invalid token")

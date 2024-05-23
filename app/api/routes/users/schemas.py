@@ -30,11 +30,10 @@ class UserDTO(BaseModel):
     phone_number: str
 
 
-class UserViewDTO:
-    def __init__(self, id: int, username: str):
-        self.id = id
-        self.username = username
+class UserViewDTO(BaseModel):
+    id: int
+    username: str
 
     @classmethod
     def from_query_result(cls, id, username):
-        return cls(id, username)
+        return cls(id=id, username=username)
