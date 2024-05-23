@@ -7,8 +7,11 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
+
+from app.core.db_dependency import get_db
 from app.core.models import User
 from app.api.routes.users.schemas import UserViewDTO
+
 
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
@@ -66,7 +69,7 @@ def from_token(session: Session, token: str) -> UserViewDTO | None:
         return None
 
 
-def get_user_or_raise_401(session: Session, token: Annotated[str, Depends(oauth2_scheme)]) -> UserViewDTO:
+def get_user_or_raise_401( token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_db)):
     if is_token_blacklisted(token):
         raise HTTPException(status_code=401, detail="You Are logged out, please log in again to proceed", headers={"WWW-Authenticate": "Bearer"})
     try:
