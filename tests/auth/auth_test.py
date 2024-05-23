@@ -8,7 +8,7 @@ from jose import jwt, JWTError
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 
-from app.api.utils.auth import hash_pass, authenticate_user, ALGORITHM, SECRET_KEY, create_token, decode_access_token, \
+from app.api.auth_service.auth import hash_pass, authenticate_user, ALGORITHM, SECRET_KEY, create_token, decode_access_token, \
     is_authenticated, from_token, get_user_or_raise_401, blacklist_token, blacklisted_tokens, is_token_blacklisted
 
 
@@ -35,7 +35,7 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(hash1, hash2)
 
 
-    @patch('app.api.utils.auth.hash_pass')
+    @patch('app.api.auth_service.auth.hash_pass')
     def test_authenticateUser_success(self,mock_hash_pass):
         db = fake_db()
         mock_user = MagicMock( )
@@ -56,7 +56,7 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(result.username, 'testuser')
         mock_hash_pass.assert_called_once_with('password')
 
-    @patch('app.api.utils.auth.hash_pass')
+    @patch('app.api.auth_service.auth.hash_pass')
     def test_authenticateUser_failureWhenNoUserIsFound(self, mock_hash_pass):
         db = fake_db( )
         db.execute = Mock()
@@ -102,7 +102,7 @@ class Authentication_Should(unittest.TestCase):
 
         self.assertEqual(result['sub'], 'testuser')
 
-    @patch('app.api.utils.auth.decode_access_token')
+    @patch('app.api.auth_service.auth.decode_access_token')
     def test_isAuthenticated_success(self, mock_decode):
         db = fake_db( )
         db.execute = Mock()
@@ -118,7 +118,7 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(result.id, 1)
         self.assertEqual(result.username, 'testuser')
 
-    @patch('app.api.utils.auth.decode_access_token')
+    @patch('app.api.auth_service.auth.decode_access_token')
     def test_isAuthenticated_failureWhenUserNotFound(self, mock_decode):
         db = fake_db( )
         db.execute = Mock()
@@ -132,7 +132,7 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "Please log in to proceed")
 
-    @patch('app.api.utils.auth.decode_access_token')
+    @patch('app.api.auth_service.auth.decode_access_token')
     def test_fromToken_success(self, mock_decode):
         db = fake_db( )
         db.execute = Mock()
@@ -148,7 +148,7 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(result.id, 1)
         self.assertEqual(result.username, 'testuser')
 
-    @patch('app.api.utils.auth.decode_access_token')
+    @patch('app.api.auth_service.auth.decode_access_token')
     def test_fromToken_failureWhenNotFound(self, mock_decode):
         db = fake_db( )
         db.execute = Mock()
@@ -160,9 +160,9 @@ class Authentication_Should(unittest.TestCase):
 
         self.assertIsNone(result)
 
-    @patch('app.api.utils.auth.is_token_blacklisted')
-    @patch('app.api.utils.auth.is_authenticated')
-    @patch('app.api.utils.auth.from_token')
+    @patch('app.api.auth_service.auth.is_token_blacklisted')
+    @patch('app.api.auth_service.auth.is_authenticated')
+    @patch('app.api.auth_service.auth.from_token')
     def test_getUserOrRaise401_success(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted):
         db = fake_db()
         mock_is_token_blacklisted.return_value = False
@@ -178,9 +178,9 @@ class Authentication_Should(unittest.TestCase):
         mock_from_token.assert_called_once_with(db, token)
         self.assertIsNotNone(result)
 
-    @patch('app.api.utils.auth.is_token_blacklisted')
-    @patch('app.api.utils.auth.is_authenticated')
-    @patch('app.api.utils.auth.from_token')
+    @patch('app.api.auth_service.auth.is_token_blacklisted')
+    @patch('app.api.auth_service.auth.is_authenticated')
+    @patch('app.api.auth_service.auth.from_token')
     def test_getUserOrRaise401_userDoesntExist(self, mock_from_token, mock_is_authenticated,
                                                      mock_is_token_blacklisted):
         db = fake_db( )
@@ -199,9 +199,9 @@ class Authentication_Should(unittest.TestCase):
         mock_is_authenticated.assert_called_once_with(db, token)
         mock_from_token.assert_not_called( )
 
-    @patch('app.api.utils.auth.is_token_blacklisted')
-    @patch('app.api.utils.auth.is_authenticated')
-    @patch('app.api.utils.auth.from_token')
+    @patch('app.api.auth_service.auth.is_token_blacklisted')
+    @patch('app.api.auth_service.auth.is_authenticated')
+    @patch('app.api.auth_service.auth.from_token')
     def test_getUserOrRaise401_invalidToken(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted):
         db = fake_db()
         mock_is_token_blacklisted.return_value = False
@@ -219,7 +219,7 @@ class Authentication_Should(unittest.TestCase):
         mock_is_authenticated.assert_called_once_with(db, token)
         mock_from_token.assert_not_called()
 
-    @patch('app.api.utils.auth.is_token_blacklisted')
+    @patch('app.api.auth_service.auth.is_token_blacklisted')
     def test_getUserOrRaise401_blacklistedToken(self, mock_is_token_blacklisted):
         mock_is_token_blacklisted.return_value = True
 

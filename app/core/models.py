@@ -17,6 +17,7 @@ from app.core.database import Base
 
 class User(Base):
     __tablename__ = "users"
+    # __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(length=25), unique=True, nullable=False)
     password = Column(String(length=200), nullable=False)
@@ -40,6 +41,7 @@ class User(Base):
 
 class Contact(Base):
     __tablename__ = "contacts"
+    __table_args__ = {'extend_existing': True}
     user_username = Column(
         String(length=25), ForeignKey("users.username"), primary_key=True
     )
@@ -59,6 +61,7 @@ class Contact(Base):
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(
         String(length=25), ForeignKey("users.username"), nullable=False
@@ -74,6 +77,7 @@ class Account(Base):
 
 class Card(Base):
     __tablename__ = "cards"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, autoincrement=True)
     account_id = Column(
         Integer,
@@ -91,6 +95,7 @@ class Card(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     sender_account = Column(Integer, nullable=False)
     receiver_account = Column(Integer, nullable=False)
@@ -108,6 +113,7 @@ class Transaction(Base):
 
 class Category(Base):
     __tablename__ = "categories"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(length=30), nullable=False)
     color_hex = Column(String(length=7), nullable=False)
