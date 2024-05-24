@@ -59,6 +59,7 @@ class UsrServices_Should(unittest.TestCase):
         db.add_all = Mock()
         db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry 'tester' for key 'username'"))
         db.rollback = Mock()
+
         #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
@@ -76,6 +77,7 @@ class UsrServices_Should(unittest.TestCase):
         db.commit = Mock(
             side_effect=IntegrityError(Mock(), Mock(), "Duplicate entry '1234567890' for key 'phone_number'"))
         db.rollback = Mock()
+
         #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
@@ -93,6 +95,7 @@ class UsrServices_Should(unittest.TestCase):
         db.commit = Mock(
             side_effect=IntegrityError(Mock( ), Mock( ), "Duplicate entry 'email@example.com' for key 'email'"))
         db.rollback = Mock( )
+
         #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
@@ -109,6 +112,7 @@ class UsrServices_Should(unittest.TestCase):
         db.add_all = Mock( )
         db.commit = Mock(side_effect=IntegrityError(Mock( ), Mock( ), "Some other integrity error"))
         db.rollback = Mock( )
+
         #Assert
         with self.assertRaises(HTTPException) as context:
             create(user_dto, db)
