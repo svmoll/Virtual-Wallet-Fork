@@ -58,3 +58,7 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(result.status, "draft")
         self.assertEqual(result.is_recurring, False)
         self.assertEqual(result.is_flagged, False)
+
+
+if __name__ == "__main__":
+    unittest.main()
