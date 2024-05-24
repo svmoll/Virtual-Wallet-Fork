@@ -8,9 +8,9 @@ from sqlalchemy.sql import text
 
 # Database configuration from environment variables
 db_username = os.getenv("DB_USERNAME", "root")
-db_password = os.getenv("DB_PASSWORD", "master")
+db_password = os.getenv("DB_PASSWORD", "new_password")
 db_url = os.getenv("DB_URL", "127.0.0.1:3306")
-db_name = os.getenv("DB_NAME", "virtual_wallet3")
+db_name = os.getenv("DB_NAME", "virtual_wallet")
 
 
 def create_database_if_not_exists():
