@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.core.models import User
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO
-from app.api.routes.users.service import create, update_user
+from app.api.routes.users.service import create, update_user, get_user
 
 
 def fake_user_dto():
@@ -196,12 +196,12 @@ class UsrServices_Should(unittest.TestCase):
         user = fake_user_dto()
         db.query( ).filter_by( ).first.return_value = user
         update_info = fake_user_update_dto()
-        db.commit.side_effect = IntegrityError(Mock( ), Mock( ), "Duplicate entry '0987654321' for key 'phone_number'")
+        db.commit.side_effect = IntegrityError(Mock(), Mock(), "Duplicate entry '0987654321' for key 'phone_number'")
 
         # Assert
         with self.assertRaises(HTTPException) as context:
             update_user(1, update_info, db)
-        db.rollback.assert_called_once( )
+        db.rollback.assert_called_once()
         self.assertEqual(400, context.exception.status_code)
         self.assertEqual("Phone number already exists", context.exception.detail)
 
@@ -226,3 +226,27 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual(400, context.exception.status_code)
         self.assertEqual("Email already exists", context.exception.detail)
 
+    def test_getUser_found(self):
+        # Arrange
+        fake_user = fake_user_dto()
+        db = fake_db()
+        db.query = Mock()
+        db.query().filter_by().first.return_value = fake_user
+
+        # Act
+        result = get_user(1, db)
+
+        # Assert
+        self.assertEqual(result, fake_user)
+
+    def test_getUser_not_found(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.query().filter_by().first.return_value = None
+
+        # Act and Assert
+        with self.assertRaises(HTTPException) as context:
+            get_user(1, db)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "User not found")

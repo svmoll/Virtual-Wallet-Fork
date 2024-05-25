@@ -29,7 +29,6 @@ TPhoneNumber = Annotated[
 ]
 
 class UserDTO(BaseModel):
-    id: int | None = None
     username: TUsername
     password: str
     email: Temail

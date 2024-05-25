@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from . import service
 from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
-from .schemas import UserDTO, UserViewDTO
+from .schemas import UserDTO, UserViewDTO, UpdateUserDTO
 from ...auth_service import auth
 
 
@@ -40,6 +40,13 @@ async def logout(token: Annotated[str, Depends(auth.get_token)]):
     auth.blacklist_token(token)
     return {"msg": "Successfully logged out"}
 
-@user_router.get("/view",response_model=None)
-async def view(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],):
-    return current_user
+@user_router.get("/view",response_model=UserDTO)
+def view(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],db: Session = Depends(get_db)):
+    user = service.get_user(current_user.id, db)
+    return user
+
+@user_router.put("/update")
+def update(update_info: UpdateUserDTO, current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], db: Session = Depends(get_db)):
+    updated_user = service.update_user(current_user.id, update_info, db)
+
+    return f"User {updated_user.username} updated profile successfully."

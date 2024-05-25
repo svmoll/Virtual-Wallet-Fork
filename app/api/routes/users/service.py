@@ -37,7 +37,7 @@ def create(user: UserDTO, db: Session):
 def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
     try:
         # Retrieve the existing user
-        user = db.query(User).filter_by(id=id).first( )
+        user = db.query(User).filter_by(id=id).first()
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -65,3 +65,11 @@ def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Email already exists") from e
         else:
             raise HTTPException(status_code=400, detail="Could not complete update") from e
+
+def get_user(id, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
