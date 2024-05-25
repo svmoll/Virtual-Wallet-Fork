@@ -155,11 +155,9 @@ class Authentication_Should(unittest.TestCase):
         mock_decode.return_value = {'sub': 'testuser', 'exp': datetime.now(timezone.utc).timestamp( )}
         db.execute.return_value.scalar_one.side_effect = NoResultFound
 
-        # Act
+        # Assert
         with self.assertRaises(HTTPException) as context:
             is_authenticated(db, 'token')
-
-        # Assert
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "Please log in to proceed")
 
@@ -206,10 +204,8 @@ class Authentication_Should(unittest.TestCase):
         mock_from_token.return_value = MagicMock()
         token = 'valid_token'
 
-        # Act
-        result = get_user_or_raise_401(token, db)
-
         # Assert
+        result = get_user_or_raise_401(token, db)
         mock_is_token_blacklisted.assert_called_once_with(token)
         mock_is_authenticated.assert_called_once_with(db, token)
         mock_from_token.assert_called_once_with(db, token)
@@ -227,11 +223,9 @@ class Authentication_Should(unittest.TestCase):
         mock_from_token.return_value = None
         token = 'invalid_token'
 
-        # Act
+        # Assert
         with self.assertRaises(HTTPException) as context:
             get_user_or_raise_401(token, db)
-
-        # Assert
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "User doesn't exist")
         mock_is_token_blacklisted.assert_called_once_with(token)
@@ -249,11 +243,9 @@ class Authentication_Should(unittest.TestCase):
         mock_from_token.return_value = None
         token = 'invalid_token'
 
-        # Act
+        # Assert
         with self.assertRaises(HTTPException) as context:
             get_user_or_raise_401(token, db)
-
-        # Assert
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "Invalid token")
         mock_is_token_blacklisted.assert_called_once_with(token)
@@ -267,11 +259,9 @@ class Authentication_Should(unittest.TestCase):
         token = 'blacklisted_token'
         session = MagicMock( )
 
-        # Act
+        # Assert
         with self.assertRaises(HTTPException) as context:
             get_user_or_raise_401(token, session)
-
-        # Assert
         self.assertEqual(context.exception.status_code, 401)
         self.assertEqual(context.exception.detail, "You Are logged out, please log in again to proceed")
 
