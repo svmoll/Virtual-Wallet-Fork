@@ -18,16 +18,21 @@ TPassword = Annotated[
     str,
     StringConstraints(
         strip_whitespace=True, pattern=r"^{8,20}$"
-    ),  # TODO Find a Regex that works with pydantic and meets the cretaria for password
+    ),  # TODO Find a Regex that works with pydantic and meets the criteria for password
 ]
 
+TPhoneNumber = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, pattern=r"^\d{10}$"
+    )
+]
 
 class UserDTO(BaseModel):
-    id: int | None = None
     username: TUsername
     password: str
     email: Temail
-    phone_number: str
+    phone_number: TPhoneNumber
 
 
 class UserViewDTO(BaseModel):
@@ -37,3 +42,9 @@ class UserViewDTO(BaseModel):
     @classmethod
     def from_query_result(cls, id, username):
         return cls(id=id, username=username)
+
+class UpdateUserDTO(BaseModel):
+    password: str | None = None
+    email: Temail | None = None
+    phone_number: TPhoneNumber | None = None
+    photo: str | None = None
