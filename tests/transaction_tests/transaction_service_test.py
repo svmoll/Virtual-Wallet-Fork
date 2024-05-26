@@ -1,3 +1,4 @@
+from ast import arg
 import unittest
 from unittest.mock import patch, Mock, MagicMock
 
@@ -56,6 +57,38 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(result.status, "draft")
         self.assertEqual(result.is_recurring, False)
         self.assertEqual(result.is_flagged, False)
+
+    def test_createDraftTransaction_raisesHTTPExceptionForNonExistentReceiver(self):
+        # Arrange
+        transaction = fake_transaction_dto()
+        sender_account = TEST_SENDER_ACCOUNT
+        db = fake_db()
+        db.add = Mock()
+        db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "receiver_account"))
+        db.rollback = Mock()
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            create_draft_transaction(sender_account, transaction, db)
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, "Receiver doesn't exist!")
+
+    def test_createDraftTransaction_raisesHTTPExceptionWhenCategoryIDDoesNotExist(self):
+        # Arrange
+        transaction = fake_transaction_dto()
+        sender_account = TEST_SENDER_ACCOUNT
+        db = fake_db()
+        db.add = Mock()
+        db.commit = Mock(side_effect=IntegrityError(Mock(), Mock(), "category_id"))
+        db.rollback = Mock()
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            create_draft_transaction(sender_account, transaction, db)
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, "Category doesn't exist!")
+        db.rollback.assert_called_once()
 
 
 if __name__ == "__main__":

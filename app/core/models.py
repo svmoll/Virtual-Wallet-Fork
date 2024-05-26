@@ -138,9 +138,38 @@ class Transaction(Base):
     )  # (0 = daily, 1 = weekly, 2 = monthly)
     is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    sender_account_rel = relationship("Account", foreign_keys=[sender_account], back_populates="sent_transactions")
-    receiver_account_rel = relationship("Account", foreign_keys=[receiver_account], back_populates="received_transactions")
+    sender_account_rel = relationship(
+        "Account", foreign_keys=[sender_account], back_populates="sent_transactions"
+    )
+    receiver_account_rel = relationship(
+        "Account",
+        foreign_keys=[receiver_account],
+        back_populates="received_transactions",
+    )
 
+    def __init__(
+        self,
+        sender_account,
+        receiver_account,
+        amount,
+        category_id=None,
+        description=None,
+        transaction_date=None,
+        status="draft",
+        is_recurring=False,
+        recurring_interval=None,
+        is_flagged=False,
+    ):
+        self.sender_account = sender_account
+        self.receiver_account = receiver_account
+        self.amount = amount
+        self.category_id = category_id
+        self.description = description
+        self.transaction_date = transaction_date
+        self.status = status
+        self.is_recurring = is_recurring
+        self.recurring_interval = recurring_interval
+        self.is_flagged = is_flagged
 
 
 @dataclass
