@@ -20,4 +20,5 @@ def create_draft_transaction(
 
     created_draft_transaction = cdt(current_user.username, transaction, db)
 
-    return f"You are about to send {created_draft_transaction.amount} to {created_draft_transaction.receiver_account}"
+    return f"You are about to send {created_draft_transaction.amount} to {created_draft_transaction.receiver_account}
+    "
