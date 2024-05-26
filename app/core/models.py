@@ -132,11 +132,11 @@ class Transaction(Base):
     status: Mapped[str] = mapped_column(
         String(length=10), server_default="draft", nullable=False
     )  # (other statuses: "pending", "completed", "declined")
-    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recurring_interval: Mapped[int] = mapped_column(
         Integer
     )  # (0 = daily, 1 = weekly, 2 = monthly)
-    is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+    is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 @dataclass
