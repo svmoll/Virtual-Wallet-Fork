@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from . import service
-from core.db_dependency import get_db
+from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from .schemas import UserDTO, UserViewDTO, UpdateUserDTO
 from ...auth_service import auth
