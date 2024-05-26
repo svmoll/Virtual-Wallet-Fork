@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from app.core.db_dependency import get_db
 from .schemas import TransactionDTO
 from sqlalchemy.orm import Session
-from .service import create_draft_transaction as cdt
+from .service import create_draft_transaction
 from ..users.schemas import UserDTO, UserViewDTO
 from ...auth_service import auth
 
@@ -18,6 +18,8 @@ def create_draft_transaction(
     db: Session = Depends(get_db),
 ):
 
-    created_draft_transaction = cdt(current_user.username, transaction, db)
+    created_draft_transaction = create_draft_transaction(
+        current_user.username, transaction, db
+    )
 
     return f"You are about to send {created_draft_transaction.amount} to {created_draft_transaction.receiver_account} [Draft ID: {created_draft_transaction.id}]"
