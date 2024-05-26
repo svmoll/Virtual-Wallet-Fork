@@ -1,4 +1,7 @@
 from datetime import datetime, date
+from typing import Any
+from dataclasses import dataclass, fields
+
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import (
     String,
@@ -44,6 +47,13 @@ class User(Base):
         back_populates="contact_user",
     )
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, User):
+            return False
+        return all(
+            getattr(self, field.name) == getattr(other, field.name)
+            for field in fields(self)
+        )
 
 @dataclass
 class Contact(Base):
