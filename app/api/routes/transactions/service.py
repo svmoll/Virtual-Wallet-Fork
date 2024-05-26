@@ -2,7 +2,7 @@ from .schemas import TransactionDTO
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
-from core.models import Transaction
+from app.core.models import Transaction
 
 
 def create_draft_transaction(
