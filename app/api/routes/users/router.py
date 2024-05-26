@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from . import service
 from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
-from .schemas import UserDTO, UserViewDTO, UpdateUserDTO
+from .schemas import UserDTO, UserViewDTO, UpdateUserDTO, UserShowDTO
 from ...auth_service import auth
 
 
@@ -35,12 +35,12 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],db: S
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@user_router.get("/logout",response_model=None)
+@user_router.get("/logout")
 async def logout(token: Annotated[str, Depends(auth.get_token)]):
     auth.blacklist_token(token)
     return {"msg": "Successfully logged out"}
 
-@user_router.get("/view",response_model=UserDTO)
+@user_router.get("/view", response_model=UserShowDTO)
 def view(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],db: Session = Depends(get_db)):
     user = service.get_user(current_user.id, db)
     return user
