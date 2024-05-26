@@ -130,7 +130,7 @@ class Transaction(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     transaction_date: Mapped[datetime] = mapped_column(DateTime, default=None)
     status: Mapped[str] = mapped_column(
-        String(length=10), server_default="draft", nullable=False
+        String(length=10), default="draft", nullable=False
     )  # (other statuses: "pending", "completed", "declined")
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recurring_interval: Mapped[int] = mapped_column(
