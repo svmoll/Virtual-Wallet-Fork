@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from core.db_dependency import get_db
+from app.core.db_dependency import get_db
 from .schemas import CategoryDTO
 from sqlalchemy.orm import Session
 from .service import create_category as cs
