@@ -34,7 +34,7 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    user_accounts = relationship("Account", back_populates="accounts_user")
+    # user_accounts = relationship("Account", back_populates="accounts_user")
 
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
@@ -137,6 +137,10 @@ class Transaction(Base):
         Integer
     )  # (0 = daily, 1 = weekly, 2 = monthly)
     is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    sender_account_rel = relationship("Account", foreign_keys=[sender_account], back_populates="sent_transactions")
+    receiver_account_rel = relationship("Account", foreign_keys=[receiver_account], back_populates="received_transactions")
+
 
 
 @dataclass

@@ -4,8 +4,6 @@ from unittest.mock import patch, Mock, MagicMock
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
-
-
 from app.core.models import Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.service import create_draft_transaction
