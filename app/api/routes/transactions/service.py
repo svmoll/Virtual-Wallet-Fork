@@ -82,3 +82,24 @@ def update_draft_transaction(
             raise HTTPException(status_code=400, detail="Category doesn't exist!")
         else:
             raise HTTPException(status_code=400, detail="Database error occurred!")
+
+
+def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
+    transaction_draft = (
+        db.query(Transaction)
+        .filter(
+            Transaction.id == transaction_id,
+            Transaction.sender_account == sender_account,
+            Transaction.status == "draft",
+        )
+        .first()
+    )
+
+    if not transaction_draft:
+        raise HTTPException(status_code=404, detail="Transaction draft not found!")
+
+    transaction_draft.status = "pending"
+    db.commit()
+    db.refresh(transaction_draft)
+
+    return transaction_draft

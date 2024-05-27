@@ -10,6 +10,7 @@ from app.api.routes.transactions.service import (
     create_draft_transaction,
     update_draft_transaction,
     get_transaction_by_id,
+    confirm_draft_transaction,
 )
 
 
@@ -130,7 +131,6 @@ class TransactionsServiceShould(unittest.TestCase):
         sender_account = TEST_SENDER_ACCOUNT
         updated_transaction = fake_updated_dto()
         db = fake_db()
-        db.add = Mock()
         db.commit = Mock()
         db.refresh = Mock()
         get_transaction_mock.return_value = fake_transaction_draft()
@@ -172,6 +172,26 @@ class TransactionsServiceShould(unittest.TestCase):
 
         # Assert
         self.assertIsNone(result)
+
+    @patch("app.api.routes.transactions.service.get_transaction_by_id")
+    def test_confirmDraftTransaction_returnsTransactionWithPendingStatus(
+        self, get_transaction_mock
+    ):
+        # Arrange
+        sender_account = TEST_SENDER_ACCOUNT
+        transaction_id = 1
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_transaction_mock.return_value = fake_transaction_draft()
+
+        # Act
+        result = confirm_draft_transaction(sender_account, transaction_id, db)
+
+        # Assert
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
+        self.assertEqual(result.status, "pending")
 
 
 if __name__ == "__main__":
