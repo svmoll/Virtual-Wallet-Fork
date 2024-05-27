@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.models import Base
 from app.main import app
 from app.core.db_dependency import get_db
-from app.api.auth_service import create_token, hash_pass
+from app.api.auth_service.auth import create_token, hash_pass
 from app.core.models import User
 from datetime import timedelta
 
