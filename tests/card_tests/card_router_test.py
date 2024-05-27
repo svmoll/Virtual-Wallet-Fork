@@ -1,10 +1,11 @@
 import asyncio
 import unittest
 from sqlalchemy.orm import sessionmaker
+from fastapi import HTTPException
 from unittest.mock import patch, Mock, MagicMock, create_autospec
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
 from app.core.models import Card
-from app.api.routes.cards.router import create_card
+from app.api.routes.cards.router import create_card, delete_card
 from app.api.routes.cards.schemas import CardDTO, UserViewDTO
 
 
@@ -57,6 +58,7 @@ class CardRouter_Should(unittest.TestCase):
             self.assertEqual(expected_result, result)
 
         asyncio.run(async_test())
+
 
 
 
