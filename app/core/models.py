@@ -10,6 +10,7 @@ from sqlalchemy import (
     Date,
     DECIMAL,
 )
+from decimal import Decimal
 from sqlalchemy.orm import relationship, mapped_column
 from sqlalchemy.orm.decl_api import Mapped
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -159,10 +160,11 @@ class Transaction(Base):
         is_recurring=False,
         recurring_interval=None,
         is_flagged=False,
+        id=None,  # for testing purposes; needs to be resolved
     ):
         self.sender_account = sender_account
         self.receiver_account = receiver_account
-        self.amount = amount
+        self.amount = amount  # Decimal(f"{amount:.2f}")
         self.category_id = category_id
         self.description = description
         self.transaction_date = transaction_date
@@ -170,6 +172,8 @@ class Transaction(Base):
         self.is_recurring = is_recurring
         self.recurring_interval = recurring_interval
         self.is_flagged = is_flagged
+        if id is not None:
+            self.id = id  # for testing purposes, needs to be resolved
 
 
 @dataclass

@@ -12,7 +12,7 @@ transaction_router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
 @transaction_router.post("/draft")
-def create_draft_transaction(
+def make_draft_transaction(
     current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
     transaction: TransactionDTO,
     db: Session = Depends(get_db),
