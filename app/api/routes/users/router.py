@@ -10,14 +10,13 @@ from .schemas import UserDTO, UserViewDTO, UpdateUserDTO, UserShowDTO
 from ...auth_service import auth
 
 
-
-
-
 user_router = APIRouter(prefix="/users", tags=["Users"])
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 @user_router.post("/register")
 async def register_user(user: UserDTO, db: Session = Depends(get_db)):
@@ -25,13 +24,24 @@ async def register_user(user: UserDTO, db: Session = Depends(get_db)):
 
     return f"User {created_user.username} created successfully."
 
+
 @user_router.post("/login")
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],db: Session = Depends(get_db)):
+async def login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Session = Depends(get_db),
+):
     user = auth.authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth.create_token(data={form_data.username: form_data.username}, expires_delta=access_token_expires)
+    access_token = auth.create_token(
+        data={form_data.username: form_data.username},
+        expires_delta=access_token_expires,
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -40,13 +50,22 @@ async def logout(token: Annotated[str, Depends(auth.get_token)]):
     auth.blacklist_token(token)
     return {"msg": "Successfully logged out"}
 
+
 @user_router.get("/view", response_model=UserShowDTO)
-def view(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],db: Session = Depends(get_db)):
+def view(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db),
+):
     user = service.get_user(current_user.id, db)
     return user
 
+
 @user_router.put("/update")
-def update(update_info: UpdateUserDTO, current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], db: Session = Depends(get_db)):
+def update(
+    update_info: UpdateUserDTO,
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db),
+):
     updated_user = service.update_user(current_user.id, update_info, db)
 
     return f"User {updated_user.username} updated profile successfully."

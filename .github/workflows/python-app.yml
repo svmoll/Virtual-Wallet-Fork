@@ -67,4 +67,5 @@ jobs:
     - name: Test with unittest
       run: |
         python -m unittest discover -s tests/user_tests -p "*_test.py"
-        python -m unittest discover -s tests/auth -p "*_test.py"    
+        python -m unittest discover -s tests/auth -p "*_test.py"
+        python -m unittest discover -s tests/transaction_tests -p "*_test.py"     

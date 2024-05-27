@@ -15,7 +15,11 @@ category_router = APIRouter(prefix="/categories", tags=["Category"])
 
 
 @category_router.post("/")
-def create_category(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], category: CategoryDTO, db: Session = Depends(get_db)):
+def create_category(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    category: CategoryDTO,
+    db: Session = Depends(get_db),
+):
     created_category = cs(category, db)
 
     return {"message": "Category created successfully", "category": created_category}

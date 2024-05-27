@@ -13,8 +13,10 @@ from sqlalchemy import (
     Date,
     DECIMAL,
 )
+from decimal import Decimal
 from sqlalchemy.orm import relationship, mapped_column
 from sqlalchemy.orm.decl_api import Mapped
+from sqlalchemy.ext.hybrid import hybrid_property
 from dataclasses import dataclass
 
 Base = declarative_base()
@@ -36,7 +38,7 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    user_accounts = relationship("Account", back_populates="accounts_user")
+    # user_accounts = relationship("Account", back_populates="accounts_user")
 
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
@@ -83,10 +85,23 @@ class Account(Base):
     balance: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0.00, nullable=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    accounts_user = relationship(
-        "User", back_populates="user_accounts", foreign_keys=[username]
-    )
     accounts_cards = relationship("Card", back_populates="cards_accounts")
+
+    sent_transactions = relationship(
+        "Transaction",
+        foreign_keys="[Transaction.sender_account]",
+        back_populates="sender_account_rel",
+    )
+
+    received_transactions = relationship(
+        "Transaction",
+        foreign_keys="[Transaction.receiver_account]",
+        back_populates="receiver_account_rel",
+    )
+
+    @hybrid_property
+    def all_transactions(self):
+        return self.sent_transactions + self.received_transactions
 
 
 @dataclass
@@ -113,22 +128,62 @@ class Transaction(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, index=True, autoincrement=True
     )
-    sender_account: Mapped[int] = mapped_column(Integer, nullable=False)
-    receiver_account: Mapped[int] = mapped_column(Integer, nullable=False)
+    sender_account: Mapped[str] = mapped_column(
+        String(length=25), ForeignKey("accounts.username"), nullable=False
+    )
+    receiver_account: Mapped[str] = mapped_column(
+        String(length=25), ForeignKey("accounts.username"), nullable=False
+    )
     amount: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
     category_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("categories.id"), nullable=False
+        Integer, ForeignKey("categories.id"), nullable=True
     )
     description: Mapped[str] = mapped_column(Text, nullable=True)
     transaction_date: Mapped[datetime] = mapped_column(DateTime, default=None)
-    status: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )  # (0 = pending, 1 = completed, 2 = declined)
+    status: Mapped[str] = mapped_column(
+        String(length=10), default="draft", nullable=False
+    )  # (other statuses: "pending", "completed", "declined")
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recurring_interval: Mapped[int] = mapped_column(
         Integer
     )  # (0 = daily, 1 = weekly, 2 = monthly)
     is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    sender_account_rel = relationship(
+        "Account", foreign_keys=[sender_account], back_populates="sent_transactions"
+    )
+    receiver_account_rel = relationship(
+        "Account",
+        foreign_keys=[receiver_account],
+        back_populates="received_transactions",
+    )
+
+    def __init__(
+        self,
+        sender_account,
+        receiver_account,
+        amount,
+        category_id=None,
+        description=None,
+        transaction_date=None,
+        status="draft",
+        is_recurring=False,
+        recurring_interval=None,
+        is_flagged=False,
+        id=None,  # for testing purposes; needs to be resolved
+    ):
+        self.sender_account = sender_account
+        self.receiver_account = receiver_account
+        self.amount = amount  # Decimal(f"{amount:.2f}")
+        self.category_id = category_id
+        self.description = description
+        self.transaction_date = transaction_date
+        self.status = status
+        self.is_recurring = is_recurring
+        self.recurring_interval = recurring_interval
+        self.is_flagged = is_flagged
+        if id is not None:
+            self.id = id  # for testing purposes, needs to be resolved
 
 
 @dataclass
