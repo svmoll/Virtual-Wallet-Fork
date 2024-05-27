@@ -1,7 +1,7 @@
 import re
 from pydantic import BaseModel, field_validator
 from app.api.utils.validation_errors import UsernameValidationError, PasswordValidationError, EmailValidationError, \
-    PhoneNumberValidationError
+    PhoneNumberValidationError, FullNameValidationError
 
 
 class UserDTO(BaseModel):
@@ -9,36 +9,43 @@ class UserDTO(BaseModel):
     password: str
     email: str
     phone_number: str
+    fullname: str
 
-    @field_validator('username')
+    @field_validator("username")
     def validate_username(cls, v):
         if not re.match(r"^\w{2,20}$", v):
             raise UsernameValidationError("Username must be between 2 and 20 characters and contain only alphanumeric characters and underscores.")
         return v
-    @field_validator('password')
+    @field_validator("password")
     def validate_password(cls, p):
         if len(p) < 8 or len(p) > 20:
-            raise PasswordValidationError('Password must be between 8 and 20 characters long.')
+            raise PasswordValidationError("Password must be between 8 and 20 characters long.")
         if not any(char.isupper() for char in p):
-            raise PasswordValidationError('Password must contain at least one uppercase letter')
+            raise PasswordValidationError("Password must contain at least one uppercase letter")
         if not any(char.isdigit() for char in p):
-            raise PasswordValidationError('Password must contain at least one digit')
-        if not any(char in '!@#$%^&*()_+{}[]:;<>,.?~\\-' for char in p):
-            raise PasswordValidationError('Password must contain at least one special character')
+            raise PasswordValidationError("Password must contain at least one digit")
+        if not any(char in "!@#$%^&*()_+{}[]:;<>,.?~\\-" for char in p):
+            raise PasswordValidationError("Password must contain at least one special character")
         return p
 
-    @field_validator('email')
+    @field_validator("email")
     def validate_email(cls, e):
         if not re.match(r"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$", e):
-            raise EmailValidationError('Pleas input a valid email address')
+            raise EmailValidationError("Pleas input a valid email address")
         return e
 
 
-    @field_validator('phone_number')
+    @field_validator("phone_number")
     def validate_phone_number(cls, p):
-        if len(p) != 10:
-            raise PhoneNumberValidationError('Must be a valid phone number with 10 digits') # Todo add only digits
+        if len(p) != 10 or not p.isdigit():
+            raise PhoneNumberValidationError("Must be a valid phone number with exactly 10 digits")
         return p
+
+    @field_validator("fullname")
+    def validate_fullname(cls, f):
+        if len(f) > 30 or not re.match(r"^[a-zA-Z0-9\s]+$", f):
+            raise FullNameValidationError("fyll name must be no more than 50 characters and contain only alphanumeric characters")
+        return f
 
 
 
@@ -55,6 +62,7 @@ class UpdateUserDTO(BaseModel):
     email: str | None = None
     phone_number: str | None = None
     photo: str | None = None
+    fullname: str | None = None
 
 
     @field_validator('password')
@@ -82,9 +90,17 @@ class UpdateUserDTO(BaseModel):
             raise PhoneNumberValidationError('Must be a valid phone number with 10 digits')
         return p
 
+    @field_validator("fullname")
+    def validate_fullname(cls, f):
+        if len(f) > 30 or not re.match(r"^[a-zA-Z0-9\s]+$", f):
+            raise FullNameValidationError("fyll name must be no more than 50 characters and contain only alphanumeric characters")
+        return f
+
+
 class UserShowDTO(BaseModel):
     username: str
     password: str
     email: str
     phone_number: str
+    fullname: str
 

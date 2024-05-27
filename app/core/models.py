@@ -34,6 +34,7 @@ class User(Base):
     phone_number: Mapped[str] = mapped_column(
         String(length=100), unique=True, nullable=False
     )
+    fullname: Mapped[str] = mapped_column(String(length=30), nullable=False)
     photo_path: Mapped[str] = mapped_column(String(length=300), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

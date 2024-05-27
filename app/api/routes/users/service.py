@@ -16,11 +16,15 @@ def create(user: UserDTO, db: Session):
             password=hashed_password,
             email=user.email,
             phone_number=user.phone_number,
+            fullname=user.fullname
         )
         account = Account(username=user.username)
-        db.add_all([new_user, account])
+        db.add(new_user)
         db.commit()
         db.refresh(new_user)
+        db.add(account)
+        db.commit()
+        db.refresh(account)
         return new_user
     except IntegrityError as e:
         db.rollback()
@@ -35,10 +39,6 @@ def create(user: UserDTO, db: Session):
         elif "email" in str(e.orig):
             raise HTTPException(status_code=400, detail="Email already exists") from e
         else:
-            raise HTTPException(
-                status_code=400, detail="Could not complete registration"
-            ) from e
-
             raise HTTPException(
                 status_code=400, detail="Could not complete registration"
             ) from e
@@ -59,6 +59,8 @@ def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
             user.email = update_info.email
         if update_info.phone_number:
             user.phone_number = update_info.phone_number
+        if update_info.fullname:
+            user.fullname = update_info.fullname
 
         # Commit the changes to the database
         db.commit()
@@ -94,6 +96,7 @@ def get_user(id, db: Session = Depends(get_db)):
         password="********",
         email=user.email,
         phone_number=user.phone_number,
+        fullname=user.fullname
     )
 
     return user
