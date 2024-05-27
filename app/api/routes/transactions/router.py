@@ -9,7 +9,7 @@ from .service import (
     update_draft_transaction,
     confirm_draft_transaction,
 )
-from ..users.schemas import UserDTO, UserViewDTO
+from ..users.schemas import UserViewDTO
 from ...auth_service import auth
 
 transaction_router = APIRouter(prefix="/transactions", tags=["Transactions"])
