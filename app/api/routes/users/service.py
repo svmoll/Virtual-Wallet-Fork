@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from app.core.db_dependency import get_db
-from .schemas import UserDTO, UpdateUserDTO
+from .schemas import UserDTO, UpdateUserDTO, UserShowDTO
 from app.core.models import User, Account
 from app.api.auth_service.auth import hash_pass
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, DataError
 from fastapi import HTTPException, Depends
 
 
@@ -88,4 +88,12 @@ def get_user(id, db: Session = Depends(get_db)):
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    user = UserShowDTO(
+        username=user.username,
+        password="********",
+        email=user.email,
+        phone_number=user.phone_number,
+    )
+
     return user

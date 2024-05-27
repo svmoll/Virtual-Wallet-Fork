@@ -30,7 +30,7 @@ def fake_db():
 
 def fake_user_update_dto():
     return UpdateUserDTO(
-        password="new_hashed_password",
+        password="new_hashed_passw0rD!",
         email="new_email@example.com",
         phone_number="0987654321",
         photo="photo.png",
@@ -156,7 +156,7 @@ class UserRouter_Should(unittest.TestCase):
         response = update(fake_user_update_dto(), updated_user_dto, db)
 
         # Assert
-        self.assertEqual(f"User {updated_user_dto.username} updated profile successfully.", response)
+        self.assertEqual(f"User testuser updated profile successfully.", response)
         mock_update_user.assert_called_once()
 
 

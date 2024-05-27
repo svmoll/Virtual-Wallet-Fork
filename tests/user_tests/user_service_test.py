@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
 from app.core.models import User
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO
+from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO
 from app.api.routes.users.service import create, update_user, get_user
 
 
@@ -31,6 +31,15 @@ def fake_user_update_dto():
     )
 
 
+def fake_user_show_dto():
+    return UserShowDTO(
+        username="tester",
+        password="********",
+        email="email@example.com",
+        phone_number="1234567890",
+    )
+
+
 Session = sessionmaker()
 
 
@@ -52,16 +61,25 @@ class UsrServices_Should(unittest.TestCase):
 
         # Act
         result = create(user, db)
-
+        expected_user = User(
+            username="tester",
+            password="hashed_password",
+            email="email@example.com",
+            phone_number="1234567890",
+        )
+        # Convert objects to dictionaries excluding the '_sa_instance_state' attribute
+        result_dict = {
+            k: v for k, v in result.__dict__.items() if k != "_sa_instance_state"
+        }
+        expected_user_dict = {
+            k: v for k, v in expected_user.__dict__.items() if k != "_sa_instance_state"
+        }
         # Assert
         db.add_all.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertIsInstance(result, User)
-        self.assertEqual(result.username, "tester")
-        self.assertEqual(result.password, "hashed_password")
-        self.assertEqual(result.email, "email@example.com")
-        self.assertEqual(result.phone_number, "1234567890")
+        self.assertEqual(expected_user, result)
 
     # TODO check deep equality
     @patch("app.api.routes.users.service.hash_pass")
@@ -252,7 +270,7 @@ class UsrServices_Should(unittest.TestCase):
 
     def test_getUser_found(self):
         # Arrange
-        fake_user = fake_user_dto()
+        fake_user = fake_user_show_dto()
         db = fake_db()
         db.query = Mock()
         db.query().filter_by().first.return_value = fake_user
