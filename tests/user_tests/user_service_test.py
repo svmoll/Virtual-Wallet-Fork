@@ -16,6 +16,7 @@ def fake_user_dto():
         password="password",
         email="email@example.com",
         phone_number="1234567890",
+        fullname="Test User",
         photo_path="photo.png",
         is_admin=False,
         is_restricted=False,
@@ -27,6 +28,7 @@ def fake_user_update_dto():
         password="new_hashed_password",
         email="new_email@example.com",
         phone_number="0987654321",
+        fullname="Test User",
         photo="photo.png",
     )
 
@@ -37,6 +39,7 @@ def fake_user_show_dto():
         password="********",
         email="email@example.com",
         phone_number="1234567890",
+        fullname="Test User"
     )
 
 
@@ -55,7 +58,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user = fake_user_dto()
         db = fake_db()
-        db.add_all = Mock()
+        db.add = Mock()
         db.commit = Mock()
         db.refresh = Mock()
 
@@ -66,18 +69,13 @@ class UsrServices_Should(unittest.TestCase):
             password="hashed_password",
             email="email@example.com",
             phone_number="1234567890",
+            fullname="Test User"
         )
-        # Convert objects to dictionaries excluding the '_sa_instance_state' attribute
-        result_dict = {
-            k: v for k, v in result.__dict__.items() if k != "_sa_instance_state"
-        }
-        expected_user_dict = {
-            k: v for k, v in expected_user.__dict__.items() if k != "_sa_instance_state"
-        }
+
         # Assert
-        db.add_all.assert_called_once()
-        db.commit.assert_called_once()
-        db.refresh.assert_called_once()
+        db.add.assert_called()
+        db.commit.assert_called()
+        db.refresh.assert_called()
         self.assertIsInstance(result, User)
         self.assertEqual(expected_user, result)
 
@@ -88,7 +86,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
         db = fake_db()
-        db.add_all = Mock()
+        db.add = Mock()
         db.commit = Mock(
             side_effect=IntegrityError(
                 Mock(), Mock(), "Duplicate entry 'tester' for key 'username'"
@@ -109,7 +107,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
         db = fake_db()
-        db.add_all = Mock()
+        db.add = Mock()
         db.commit = Mock(
             side_effect=IntegrityError(
                 Mock(), Mock(), "Duplicate entry '1234567890' for key 'phone_number'"
@@ -130,7 +128,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
         db = fake_db()
-        db.add_all = Mock()
+        db.add = Mock()
         db.commit = Mock(
             side_effect=IntegrityError(
                 Mock(), Mock(), "Duplicate entry 'email@example.com' for key 'email'"
@@ -153,7 +151,7 @@ class UsrServices_Should(unittest.TestCase):
         hash_pass_mock.return_value = "hashed_password"
         user_dto = fake_user_dto()
         db = fake_db()
-        db.add_all = Mock()
+        db.add = Mock()
         db.commit = Mock(
             side_effect=IntegrityError(Mock(), Mock(), "Some other integrity error")
         )

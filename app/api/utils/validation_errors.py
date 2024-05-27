@@ -24,6 +24,10 @@ class PhoneNumberValidationError(CustomValidationError):
     def __init__(self, message: str):
         super().__init__(message=message)
 
+class FullNameValidationError(CustomValidationError):
+    def __init__(self, message: str):
+        super().__init__(message=message)
+
 @app.exception_handler(CustomValidationError)
 async def custom_validation_exception_handler(exc: CustomValidationError):
     return JSONResponse(
