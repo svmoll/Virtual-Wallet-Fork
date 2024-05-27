@@ -38,18 +38,9 @@ def create_draft_transaction(
             ) from e
 
 
-def get_transaction_by_id(id: int, db: Session = Depends(get_db)):
-    transaction = db.query(Transaction).filter(Transaction.id == id).first()
-    return transaction
-
-
-def update_draft_transaction(
-    sender_account: str,
-    transaction_id: int,
-    updated_transaction: TransactionDTO,
-    db: Session,
+def get_draft_transaction_by_id(
+    transaction_id: int, sender_account: str, db: Session = Depends(get_db)
 ) -> Transaction:
-
     transaction_draft = (
         db.query(Transaction)
         .filter(
@@ -62,6 +53,18 @@ def update_draft_transaction(
 
     if not transaction_draft:
         raise HTTPException(status_code=404, detail="Transaction draft not found!")
+
+    return transaction_draft
+
+
+def update_draft_transaction(
+    sender_account: str,
+    transaction_id: int,
+    updated_transaction: TransactionDTO,
+    db: Session,
+) -> Transaction:
+
+    transaction_draft = get_draft_transaction_by_id(transaction_id, sender_account, db)
 
     try:
         transaction_draft.amount = updated_transaction.amount
@@ -85,21 +88,77 @@ def update_draft_transaction(
 
 
 def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
-    transaction_draft = (
-        db.query(Transaction)
-        .filter(
-            Transaction.id == transaction_id,
-            Transaction.sender_account == sender_account,
-            Transaction.status == "draft",
-        )
-        .first()
-    )
-
-    if not transaction_draft:
-        raise HTTPException(status_code=404, detail="Transaction draft not found!")
+    transaction_draft = get_draft_transaction_by_id(transaction_id, sender_account, db)
 
     transaction_draft.status = "pending"
     db.commit()
     db.refresh(transaction_draft)
 
     return transaction_draft
+
+
+# def get_transaction_by_id(id: int, db: Session = Depends(get_db)):
+#     transaction = db.query(Transaction).filter(Transaction.id == id).first()
+#     return transaction
+
+
+# def update_draft_transaction(
+#     sender_account: str,
+#     transaction_id: int,
+#     updated_transaction: TransactionDTO,
+#     db: Session,
+# ) -> Transaction:
+
+#     transaction_draft = (
+#         db.query(Transaction)
+#         .filter(
+#             Transaction.id == transaction_id,
+#             Transaction.sender_account == sender_account,
+#             Transaction.status == "draft",
+#         )
+#         .first()
+#     )
+
+#     if not transaction_draft:
+#         raise HTTPException(status_code=404, detail="Transaction draft not found!")
+
+#     try:
+#         transaction_draft.amount = updated_transaction.amount
+#         transaction_draft.receiver_account = updated_transaction.receiver_account
+#         transaction_draft.category_id = updated_transaction.category_id
+#         transaction_draft.description = updated_transaction.description
+
+#         db.commit()
+#         db.refresh(transaction_draft)
+
+#         return transaction_draft
+
+#     except IntegrityError as e:
+#         db.rollback()
+#         if "receiver_account" in str(e.orig):
+#             raise HTTPException(status_code=400, detail="Receiver doesn't exist!")
+#         elif "category_id" in str(e.orig):
+#             raise HTTPException(status_code=400, detail="Category doesn't exist!")
+#         else:
+#             raise HTTPException(status_code=400, detail="Database error occurred!")
+
+
+# def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
+#     transaction_draft = (
+#         db.query(Transaction)
+#         .filter(
+#             Transaction.id == transaction_id,
+#             Transaction.sender_account == sender_account,
+#             Transaction.status == "draft",
+#         )
+#         .first()
+#     )
+
+#     if not transaction_draft:
+#         raise HTTPException(status_code=404, detail="Transaction draft not found!")
+
+#     transaction_draft.status = "pending"
+#     db.commit()
+#     db.refresh(transaction_draft)
+
+#     return transaction_draft
