@@ -1,13 +1,33 @@
 import unittest
 from unittest.mock import patch, Mock, MagicMock, call
-from app.api.routes.users.schemas import UserDTO,  UserDTO
+from app.api.routes.users.schemas import UserDTO
+from app.api.routes.cards.schemas import CardDTO  
 from sqlalchemy.orm import sessionmaker
-from app.core.models import Card
-from app.api.routes.cards.service import unique_card_number, create_cvv_number, create_card_number, create_expiration_date, get_user_fullname
 from datetime import datetime, timedelta
+from app.core.models import Card
+from fastapi import HTTPException
+from app.api.routes.cards.service import (
+                                        unique_card_number, 
+                                        create_cvv_number, 
+                                        create_card_number, 
+                                        create_expiration_date, 
+                                        get_user_fullname,
+                                        get_card_by_id,
+                                        delete
+                                        )
 
 def fake_card():
     return Card(
+        account_id=1,
+        card_number= "1111222233334444",
+        expiration_date= "2024-02-02",
+        card_holder= "Dimitar Berbatov",
+        cvv= "123"
+    )
+
+def fake_card_dto():
+    return CardDTO(
+        id=1,
         account_id=1,
         card_number= "1111222233334444",
         expiration_date= "2024-02-02",
@@ -28,9 +48,9 @@ Session = sessionmaker()
 
 
 def fake_db():
-    session_mock = MagicMock(spec=Session)
-    session_mock.query = MagicMock()
-    session_mock.query.filter = MagicMock()
+    session_mock = Mock(spec=Session)
+    session_mock.query = Mock()
+    session_mock.query.filter = Mock()
     return session_mock
 
 class CardsServiceShould(unittest.TestCase):
@@ -85,9 +105,8 @@ class CardsServiceShould(unittest.TestCase):
         mock_db_session = fake_db()
         mock_get_db.return_value = mock_db_session
 
-        # To track filter_by calls
         def filter_by_side_effect(card_number):
-            filter_mock = MagicMock()
+            filter_mock = Mock()
             filter_mock.first.return_value = None
             return filter_mock
 
@@ -137,6 +156,61 @@ class CardsServiceShould(unittest.TestCase):
         # Verify mock calls
         mock_db_session.query.assert_called_once()  
         mock_db_session.query.return_value.filter_by.assert_called_once_with(username=mock_current_user.username)
-        mock_db_session.query.return_value.filter_by.return_value.first.assert_called_once()  
+        mock_db_session.query.return_value.filter_by.return_value.first.assert_called_once()
 
 
+    @patch('app.api.routes.cards.service.get_db')
+    def test_getCardById_returnsTheCardSuccessfully(self, mock_get_db):
+        # Arrange
+        expected_card = fake_card() 
+
+        db = fake_db()
+        mock_get_db.return_value = db
+        db.query(Card).filter_by(id=expected_card.id).first.return_value = expected_card
+
+        # Act
+        actual_card = get_card_by_id(expected_card.id, db)
+
+        # Assert
+        self.assertEqual(actual_card, expected_card)
+
+
+    @patch('app.api.routes.cards.service.get_db')
+    def test_getCardById_returnsReturnsHTTPExceptionWhenNotFound(self, mock_get_db):
+        # Arrange
+        card_id = 12231  
+        db = fake_db()
+        mock_get_db.return_value = db
+        db.query(Card).filter_by(id=card_id).first.return_value = None
+
+        # Act
+        try:
+            get_card_by_id(card_id, db)
+            self.fail("Expected HTTPException not raised.")
+        except HTTPException as e:
+        
+        # Assert
+            self.assertEqual(e.status_code, 404)
+            self.assertEqual(e.detail, "Card not found!")
+
+
+    @patch('app.api.routes.cards.service.get_card_by_id')
+    @patch('app.api.routes.cards.service.get_db')
+    def test_deleteCard_trulyDeleted(self, mock_get_db, mock_get_card_by_id):
+        # Arrange
+        card = fake_card_dto()
+        db = fake_db()
+        db.delete = Mock()
+        db.commit = Mock()
+        mock_get_db.return_value = db
+
+        card_to_delete = Mock(spec=Card)
+        mock_get_card_by_id.return_value = card_to_delete
+
+        # Act
+        delete(card.id, db)
+
+        # Assert
+        mock_get_card_by_id.assert_called_once_with(card.id, db)
+        db.delete.assert_called_once_with(card_to_delete)
+        db.commit.assert_called_once()

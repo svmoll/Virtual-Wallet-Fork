@@ -3,9 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
-#  core.db_dependency import get_db
 from ..users.schemas import UserDTO
-from .schemas import CardDTO
 from app.core.models import Card, User
 from datetime import datetime, timedelta
 import random
@@ -28,6 +26,7 @@ def unique_card_number(db: Session):
 
 def create_expiration_date():
     return datetime.now() + timedelta(days=1826)
+
 
 def create_cvv_number():
     digits = string.digits 
@@ -59,6 +58,21 @@ def create(current_user: UserDTO, db: Session):
     db.refresh(new_card)
     return new_card
 
+
+def get_card_by_id(id:int, db: Session = Depends(get_db)) -> Card:
+    card = db.query(Card).filter_by(id=id).first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found!")
+
+    return card
+
+def delete(id:int, db: Session):
+    card_to_delete = get_card_by_id(id, db)
+
+    db.delete(card_to_delete)
+    db.commit()
+    
 
 
 

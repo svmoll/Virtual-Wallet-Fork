@@ -1,10 +1,11 @@
 import unittest
 from sqlalchemy.orm import sessionmaker
 from fastapi import status
-from unittest.mock import patch, Mock, MagicMock, create_autospec
+from unittest.mock import patch, Mock, MagicMock
 from app.api.routes.users.schemas import UserDTO
 from app.core.models import Card
-from app.api.routes.cards.router import create_card
+from app.api.routes.cards.router import create_card, delete_card
+from app.api.utils.responses import Forbidden
 
 
 def fake_card():
@@ -21,7 +22,8 @@ Session = sessionmaker()
 
 
 def fake_db():
-    session_mock = MagicMock(spec=Session)
+    # session_mock = MagicMock(spec=Session)
+    session_mock = MagicMock()
     session_mock.query = MagicMock()
     session_mock.query.filter = MagicMock()
     return session_mock
@@ -38,23 +40,60 @@ def fake_user_view():
 
 class CardRouter_Should(unittest.TestCase):
 
-    @patch('app.api.routes.cards.router.service')  
+    @patch('app.api.routes.cards.router.create_card')
     @patch('app.core.db_dependency.get_db')
-    def test_createCardSuccess_returnsTheCorrectStatusCodeSuccessfully(self, mock_get_db, mock_service):
-        #Arrange
-        mock_current_user = fake_user_view()
+    @patch('app.api.auth_service.auth.get_user_or_raise_401')
+    def test_createCardSuccess_returnsTheCorrectStatusCodeSuccessfully(
+        self,
+        mock_get_user_or_raise_401, 
+        mock_get_db, 
+        mock_create
+        ):
+        
+        # Arrange
+        mock_user = fake_user_view()
+        mock_get_user_or_raise_401.return_value = mock_user
 
-        mock_db_session = fake_db()
-        mock_get_db.return_value = mock_db_session
+        db = fake_db()
+        mock_get_db.return_value = db
 
         mock_created_card = fake_card()
-        mock_service.create.return_value = mock_created_card
+        mock_create.return_value = mock_created_card
 
-        #Act
-        response = create_card(current_user=mock_current_user, db=mock_db_session)
+        # Act
+        response = create_card(mock_user, db)
 
         # Assert
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        mock_service.create.assert_called_once_with(mock_current_user, mock_db_session)
+        assert response.status_code == status.HTTP_201_CREATED
+        mock_create.assert_called_once_with(mock_user, db)
 
 
+    @patch("app.api.routes.cards.router.delete_card")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_deleteCardSuccess_returnsTheCorrectStatusCodeSuccessfully(
+        self, 
+        mock_get_user, 
+        mock_get_db, 
+        mock_service_delete
+        ):
+
+        # Arrange
+        card_to_delete = fake_card()
+        card_to_delete.id = 1
+
+        user = fake_user_view()
+        mock_get_user.return_value = user
+
+        db = fake_db()
+        # db.query = MagicMock()
+        mock_get_db.return_value = db
+        
+        # mock_service_delete = Mock()
+        mock_service_delete.return_value = None
+
+        # Act
+        response = delete_card(card_to_delete.id,db)
+
+        # Assert
+        assert response.status_code == status.HTTP_204_NO_CONTENT
