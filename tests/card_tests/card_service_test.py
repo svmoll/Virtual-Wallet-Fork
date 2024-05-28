@@ -21,8 +21,13 @@ def fake_card():
     )
 
 def fake_user_view():
-    return UserDTO(id=1, username="testuser", fullname="Georgi Stoev")
-
+    return UserDTO(
+        username="testuser", 
+        password="User!234",
+        phone_number="1234567891",
+        email="email@email.com",
+        fullname="Georgi Stoev"
+    )
 
 Session = sessionmaker()
 
@@ -136,7 +141,7 @@ class CardsServiceShould(unittest.TestCase):
 
         # Verify mock calls
         mock_db_session.query.assert_called_once()  
-        mock_db_session.query.return_value.filter_by.assert_called_once_with(id=mock_current_user.id)
+        mock_db_session.query.return_value.filter_by.assert_called_once_with(username=mock_current_user.username)
         mock_db_session.query.return_value.filter_by.return_value.first.assert_called_once()  
 
 

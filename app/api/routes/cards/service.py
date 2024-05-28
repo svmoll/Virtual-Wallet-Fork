@@ -36,7 +36,7 @@ def create_cvv_number():
 
 
 def get_user_fullname(current_user, db: Session):
-    user = db.query(User).filter_by(id=current_user.id).first()
+    user = db.query(User).filter_by(username=current_user.username).first()
     return user
 
 
