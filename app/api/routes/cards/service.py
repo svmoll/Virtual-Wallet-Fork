@@ -4,7 +4,7 @@ from sqlalchemy import select
 from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
 #  core.db_dependency import get_db
-from ..users.schemas import UserViewDTO
+from ..users.schemas import UserDTO
 from .schemas import CardDTO
 from app.core.models import Card, User
 from datetime import datetime, timedelta
@@ -19,14 +19,11 @@ def create_card_number():
     return random_card_number
 
 
-def unique_card_number(db: Session = Depends(get_db)):
+def unique_card_number(db: Session):
     card_number = create_card_number()
-    # existing_cards = select(Card) # complete this
-    # while card_number in existing_cards:
-    #     unique_card_number = generate_card_number()
     while db.query(Card).filter_by(card_number=card_number).first() is not None:
         card_number = create_card_number()
-    return unique_card_number
+    return card_number
 
 
 def create_expiration_date():
@@ -39,13 +36,13 @@ def create_cvv_number():
 
 
 def get_user_fullname(current_user, db: Session):
-    user = db.query(User).filter_by(id=current_user.id).first()
+    user = db.query(User).filter_by(username=current_user.username).first()
     return user
 
 
-def create(current_user: UserViewDTO, db: Session):
+def create(current_user: UserDTO, db: Session):
     expiration_date = create_expiration_date()
-    card_number = unique_card_number()
+    card_number = unique_card_number(db)
     cvv_number = create_cvv_number()
     user = get_user_fullname(current_user, db)
 
