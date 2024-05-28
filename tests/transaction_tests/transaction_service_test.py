@@ -8,6 +8,7 @@ from app.core.models import Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.service import (
     create_draft_transaction,
+    delete_draft,
     update_draft_transaction,
     get_draft_transaction_by_id,
     confirm_draft_transaction,
@@ -205,6 +206,25 @@ class TransactionsServiceShould(unittest.TestCase):
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertEqual(result.status, "pending")
+
+    @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
+    def test_DeleteDraft_returnsNoneWhenSuccessful(self, get_transaction_mock):
+        # Arrange
+        sender_account = TEST_SENDER_ACCOUNT
+        transaction_id = 1
+        db = fake_db()
+        db.delete = Mock()
+        db.commit = Mock()
+        transaction = fake_transaction_draft()
+        get_transaction_mock.return_value = transaction
+
+        # Act
+        result = delete_draft(sender_account, transaction_id, db)
+
+        # Assert
+        db.delete.assert_called_once_with(transaction)
+        db.commit.assert_called_once()
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":
