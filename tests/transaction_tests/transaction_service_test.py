@@ -9,7 +9,7 @@ from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.service import (
     create_draft_transaction,
     update_draft_transaction,
-    get_transaction_by_id,
+    get_draft_transaction_by_id,
     confirm_draft_transaction,
 )
 
@@ -122,7 +122,7 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(context.exception.detail, "Category doesn't exist!")
         db.rollback.assert_called_once()
 
-    @patch("app.api.routes.transactions.service.get_transaction_by_id")
+    @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_updateDraftTransaction_returnsUpdatedTransactionWhenInputCorrect(
         self, get_transaction_mock
     ):
@@ -148,32 +148,45 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(result.category_id, 2)
         self.assertEqual(result.description, "updated_description")
 
-    def test_getTransactionByID_returnsTransactionWhenExists(self):
+    @patch("app.core.db_dependency.get_db")
+    def test_getTransactionByID_returnsTransactionWhenExists(self, mock_get_db):
         # Arrange
         transaction_id = 1
+        sender_account = "test_sender"
         db = fake_db()
+        mock_get_db.return_value = db
         transaction = fake_transaction_draft()
-        db.query().filter().first.return_value = transaction
+        db.query.return_value.filter.return_value.first.return_value = transaction
 
         # Act
-        result = get_transaction_by_id(transaction_id, db)
+        result = get_draft_transaction_by_id(transaction_id, sender_account, db)
 
         # Assert
         self.assertEqual(result, transaction)
+        db.query.assert_called_once_with(Transaction)
+        db.query.return_value.filter.assert_called_once()
+        db.query.return_value.filter.return_value.first.assert_called_once()
 
-    def test_getTransactionByID_returnsNoneWhenTransactionDoesNotExist(self):
+    @patch("app.core.db_dependency.get_db")
+    def test_getTransactionByID_raises404WhenTransactionDoesNotExist(self, mock_get_db):
         # Arrange
         transaction_id = 1
+        sender_account = "test_sender"
         db = fake_db()
-        db.query().filter().first.return_value = None
+        mock_get_db.return_value = db
+        db.query.return_value.filter.return_value.first.return_value = None
 
-        # Act
-        result = get_transaction_by_id(transaction_id, db)
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            get_draft_transaction_by_id(transaction_id, sender_account, db)
 
-        # Assert
-        self.assertIsNone(result)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "Transaction draft not found!")
+        db.query.assert_called_once_with(Transaction)
+        db.query.return_value.filter.assert_called_once()
+        db.query.return_value.filter.return_value.first.assert_called_once()
 
-    @patch("app.api.routes.transactions.service.get_transaction_by_id")
+    @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_confirmDraftTransaction_returnsTransactionWithPendingStatus(
         self, get_transaction_mock
     ):
