@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from . import service
-from core.db_dependency import get_db
+from ....core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from .schemas import CardDTO
 from ..users.schemas import UserDTO

@@ -1,15 +1,10 @@
-import asyncio
 import unittest
 from unittest.mock import patch, Mock, MagicMock, call
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserDTO
-from sqlalchemy.exc import IntegrityError
+from app.api.routes.users.schemas import UserDTO,  UserDTO
 from sqlalchemy.orm import sessionmaker
-from fastapi import HTTPException
 from app.core.models import Card
-from app.api.routes.cards.schemas import CardDTO
 from app.api.routes.cards.service import unique_card_number, create_cvv_number, create_card_number, create_expiration_date, get_user_fullname
 from datetime import datetime, timedelta
-import random
 
 def fake_card():
     return Card(
@@ -35,7 +30,7 @@ Session = sessionmaker()
 def fake_db():
     session_mock = MagicMock(spec=Session)
     session_mock.query = MagicMock()
-    session_mock.query.filer = MagicMock()
+    session_mock.query.filter = MagicMock()
     return session_mock
 
 class CardsServiceShould(unittest.TestCase):

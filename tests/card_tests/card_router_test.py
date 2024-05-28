@@ -1,12 +1,10 @@
-import asyncio
 import unittest
 from sqlalchemy.orm import sessionmaker
-from fastapi import HTTPException, status
+from fastapi import status
 from unittest.mock import patch, Mock, MagicMock, create_autospec
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserDTO
+from app.api.routes.users.schemas import UserDTO
 from app.core.models import Card
-from app.api.routes.cards.router import create_card, delete_card
-from app.api.routes.cards.schemas import CardDTO, UserViewDTO
+from app.api.routes.cards.router import create_card
 
 
 def fake_card():
@@ -19,33 +17,62 @@ def fake_card():
     )
 
 
-
 Session = sessionmaker()
 
 
 def fake_db():
-    return MagicMock(spec=Session)
+    session_mock = MagicMock(spec=Session)
+    session_mock.query = MagicMock()
+    session_mock.query.filter = MagicMock()
+    return session_mock
 
 
 def fake_user_view():
-    return UserDTO(id=1, username="testuser", fullname="Georgi Hristov")
-
+    return UserDTO(
+        username="testuser", 
+        password="User!234",
+        phone_number="1234567891",
+        email="email@email.com",
+        fullname="Georgi Stoev"
+    )
 
 class CardRouter_Should(unittest.TestCase):
 
-    @patch('app.api.routes.cards.router.create_card')
-    def test_createCard_returnsCorrectStatusCodeWhenSuccessful(self, create_mock):
+    @patch('app.api.routes.cards.router.service')  
+    @patch('app.core.db_dependency.get_db')
+    def test_createCardSuccess_returnsTheCorrectStatusCodeSuccessfully(self, mock_get_db, mock_service):
         #Arrange
-        # card = fake_card()
-        # create_mock.return_value = card
+        mock_current_user = fake_user_view()
 
-        user = fake_user_view()
-        db = fake_db()
+        mock_db_session = fake_db()
+        mock_get_db.return_value = mock_db_session
+
+        mock_created_card = fake_card()
+        mock_service.create.return_value = mock_created_card
+
         #Act
-        result = create_card(user, db)
-        #Assert
-        create_mock.assert_called_once()
-        expected_result = status.HTTP_201_CREATED
-        self.assertEqual(expected_result, result)
+        response = create_card(current_user=mock_current_user, db=mock_db_session)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+    @patch('app.api.routes.cards.router.service')  
+    @patch('app.core.db_dependency.get_db')
+    def test_createCardSuccess_returnsCorrectParametersSuccessfully(self, mock_get_db, mock_service):
+        #Arrange
+        mock_current_user = fake_user_view()
+
+        mock_db_session = fake_db()
+        mock_get_db.return_value = mock_db_session
+
+        mock_created_card = fake_card()
+        mock_service.create.return_value = mock_created_card
+
+        #Act
+        response = create_card(current_user=mock_current_user, db=mock_db_session)
+
+        # Assert
+        mock_service.create.assert_called_once_with(mock_current_user, mock_db_session)
 
 
