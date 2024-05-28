@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from app.core.db_dependency import get_db
 from .schemas import TransactionDTO
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from .service import (
     create_draft_transaction,
     update_draft_transaction,
     confirm_draft_transaction,
+    delete_draft,
 )
 from ..users.schemas import UserViewDTO
 from ...auth_service import auth
@@ -70,3 +71,15 @@ def confirm_transaction(
             "message": f"Your transfer to {confirmed_transaction.receiver_account} is pending!"
         },
     )
+
+
+@transaction_router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_draft_transaction(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    transaction_id: int,
+    db: Session = Depends(get_db),
+):
+
+    delete_draft(current_user.username, transaction_id, db)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
