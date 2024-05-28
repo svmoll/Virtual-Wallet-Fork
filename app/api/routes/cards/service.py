@@ -1,6 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
 from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
 from ..users.schemas import UserDTO

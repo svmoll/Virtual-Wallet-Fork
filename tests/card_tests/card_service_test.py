@@ -56,7 +56,7 @@ def fake_db():
 class CardsServiceShould(unittest.TestCase):
 
     @patch("app.api.routes.cards.service.random.choice")
-    def test_createCardNumber_IsCorrect(self, create_mock):
+    def test_createCardNumber_IsCorrectFormat(self, create_mock):
         # Arrange
         create_mock.side_effect = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6']
 
@@ -93,10 +93,10 @@ class CardsServiceShould(unittest.TestCase):
         result = create_cvv_number()
 
         # Assert
-        self.assertTrue(result.isdigit())  
-        self.assertEqual(len(result), 3)   
-        mock_random_choice.assert_called_with('0123456789')  
-        self.assertEqual(mock_random_choice.call_count, 3)   
+        self.assertTrue(result.isdigit())
+        self.assertEqual(len(result), 3)
+        mock_random_choice.assert_called_with('0123456789')
+        self.assertEqual(mock_random_choice.call_count, 3)
 
     @patch('app.api.routes.cards.service.create_card_number')
     @patch('app.api.routes.cards.service.get_db')
