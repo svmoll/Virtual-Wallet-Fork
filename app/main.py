@@ -6,6 +6,7 @@ from app.api.routes.categories.router import category_router
 from app.api.routes.users.router import user_router
 from app.api.routes.transactions.router import transaction_router
 from app.api.routes.cards.router import card_router
+
 import uvicorn
 
 models.Base.metadata.create_all(bind=engine)
