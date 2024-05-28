@@ -7,6 +7,7 @@ from app.core.models import Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.router import (
     confirm_transaction,
+    delete_draft_transaction,
     make_draft_transaction,
     edit_draft_transaction,
 )
@@ -102,3 +103,23 @@ class TransactionRouter_Should(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.service.delete_draft")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_deleteDraftTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_delete_draft, mock_get_db
+    ):
+        # Arrange
+        transaction_id = 2
+        db = fake_db()
+        user = fake_user_view()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_delete_draft.return_value = None
+
+        # Act
+        response = delete_draft_transaction(user, transaction_id, db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
