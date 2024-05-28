@@ -1,42 +1,28 @@
-import asyncio
 import unittest
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, Mock, MagicMock, create_autospec
-from fastapi.testclient import TestClient
-from app.main import app
-from app.api.auth_service.auth import authenticate_user
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
+from unittest.mock import patch, MagicMock
+from fastapi import status
+from app.api.routes.users.schemas import UserViewDTO
 from app.core.models import Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
-from app.api.routes.transactions.router import make_draft_transaction
-
-
-client = TestClient(app)
+from app.api.routes.transactions.router import (
+    confirm_transaction,
+    make_draft_transaction,
+    edit_draft_transaction,
+)
+import json
 
 
 def fake_transaction():
-    return Transaction(
-        id=2,
-        sender_account="test_sender",
-        receiver_account="test_receiver",
-        amount=11.20,
-        category_id=1,
-        description="test_description",
-        transaction_date=None,
-        status="draft",
-        is_recurring=False,
-        recurring_interval=None,
-        is_flagged=False,
-    )
+    return MagicMock()
+
+
+def fake_pending_transaction():
+    return MagicMock()
 
 
 def fake_transaction_dto():
-    return TransactionDTO(
-        receiver_account="test_receiver",
-        amount=11.30,
-        category_id=1,
-        description="test_description",
-    )
+    return MagicMock()
 
 
 Session = sessionmaker()
@@ -50,26 +36,69 @@ def fake_user_view():
     return UserViewDTO(id=1, username="testuser")
 
 
-# class TransactionRouter_Should(unittest.TestCase):
+class TransactionRouter_Should(unittest.TestCase):
 
-#     @patch("app.core.db_dependency.get_db")
-#     @patch("app.api.routes.transactions.service.create_draft_transaction")
-#     @patch("app.api.auth_service.auth.get_user_or_raise_401")
-#     def test_createDraftTransaction_IsSuccessful(
-#         self, mock_get_db, create_draft_transaction_mock, get_user_mock
-#     ):
-#         # Arrange
-#         get_user_mock.return_value = fake_user_view()
-#         transaction_dto = fake_transaction_dto()
-#         mock_get_db.return_value = fake_db()
-#         db = fake_db()
-#         create_draft_transaction_mock.return_value = fake_transaction()
-#         user = fake_user_view()
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.service.create_draft_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_makeDraftTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_create_draft_transaction, mock_get_db
+    ):
+        # Arrange
+        transaction_dto = fake_transaction_dto()
+        db = fake_db()
+        user = fake_user_view()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_created_draft_transaction = fake_transaction()
+        mock_create_draft_transaction.return_value = mock_created_draft_transaction
 
-#         # Act
-#         response = make_draft_transaction(user, transaction_dto, db)
+        # Act
+        response = make_draft_transaction(user, transaction_dto, db)
 
-#         # Assert
-#         self.assertEqual(
-#             response, "You are about to send 11.20 to test_receiver [Draft ID: 2]"
-#         )
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.service.update_draft_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_editDraftTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_update_draft_transaction, mock_get_db
+    ):
+        # Arrange
+        user = fake_user_view()
+        transaction_id = 2
+        updated_transaction = fake_transaction_dto()
+        db = fake_db()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_updated_draft = fake_transaction()
+        mock_update_draft_transaction.return_value = mock_updated_draft
+
+        # Act
+        response = edit_draft_transaction(user, transaction_id, updated_transaction, db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.service.create_draft_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_confirmTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_confirm_draft_transaction, mock_get_db
+    ):
+
+        # Arrange
+        transaction_id = 2
+        db = fake_db()
+        user = fake_user_view()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_confirmed_transaction = fake_pending_transaction()
+        mock_confirm_draft_transaction.return_value = mock_confirmed_transaction
+
+        # Act
+        response = confirm_transaction(user, transaction_id, db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
