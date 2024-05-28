@@ -55,24 +55,6 @@ class CardRouter_Should(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-
-    @patch('app.api.routes.cards.router.service')  
-    @patch('app.core.db_dependency.get_db')
-    def test_createCardSuccess_returnsCorrectParametersSuccessfully(self, mock_get_db, mock_service):
-        #Arrange
-        mock_current_user = fake_user_view()
-
-        mock_db_session = fake_db()
-        mock_get_db.return_value = mock_db_session
-
-        mock_created_card = fake_card()
-        mock_service.create.return_value = mock_created_card
-
-        #Act
-        response = create_card(current_user=mock_current_user, db=mock_db_session)
-
-        # Assert
         mock_service.create.assert_called_once_with(mock_current_user, mock_db_session)
 
 
