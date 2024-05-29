@@ -20,11 +20,11 @@ def withdrawal_request(
     
     account = get_account_by_id(current_user, db)
 
-    if account.is_blocked:
-        raise HTTPException(status_code=400, detail=f"Account is blocked. Contact Customer Support.")
-    elif withdrawal_amount < 0:
-        raise HTTPException(status_code=400, detail=f"You are requesting to withdraw a negative amount.")
-    elif withdrawal_amount > account.balance:
+    # if account.is_blocked:
+    #     raise HTTPException(status_code=400, detail=f"Account is blocked. Contact Customer Support.")
+    if withdrawal_amount < 0:
+        raise HTTPException(status_code=400, detail=f"Withdrawals should be written as a positive number.")
+    if withdrawal_amount > account.balance:
         raise HTTPException(status_code=400, detail=f"Insufficient amount to withdraw {withdrawal_amount} leva")
     
     account.balance -= withdrawal_amount

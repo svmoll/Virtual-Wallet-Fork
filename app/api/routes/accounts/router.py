@@ -23,7 +23,7 @@ def create_withdrawal(
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={
-            "message": f"The withdrawal of {withdrawal_amount} leva is received and being processed."
+            "message": f"The withdrawal of {withdrawal_amount} leva is being processed."
         },
     )
 
