@@ -9,13 +9,14 @@ from app.api.utils.responses import Forbidden
 
 
 def fake_card():
-    return Card(
-        account_id=1,
-        card_number= "1111222233334444",
-        expiration_date= "2024-02-02",
-        card_holder= "Dimitar Berbatov",
-        cvv= "123"
-    )
+    # return Card(
+    #     account_id=1,
+    #     card_number= "1111222233334444",
+    #     expiration_date= "2024-02-02",
+    #     card_holder= "Dimitar Berbatov",
+    #     cvv= "123"
+    # )
+    return MagicMock()
 
 
 Session = sessionmaker()
@@ -35,14 +36,15 @@ def fake_user_view():
         password="User!234",
         phone_number="1234567891",
         email="email@email.com",
-        fullname="Georgi Stoev"
+        fullname="Salvador Dali"
     )
 
 class CardRouter_Should(unittest.TestCase):
 
-    @patch('app.api.routes.cards.router.create_card')
+
     @patch('app.core.db_dependency.get_db')
     @patch('app.api.auth_service.auth.get_user_or_raise_401')
+    @patch('app.api.routes.cards.service.create')
     def test_createCardSuccess_returnsTheCorrectStatusCodeSuccessfully(
         self,
         mock_get_user_or_raise_401, 
@@ -55,13 +57,15 @@ class CardRouter_Should(unittest.TestCase):
         mock_get_user_or_raise_401.return_value = mock_user
 
         db = fake_db()
+        db.query.return_value = MagicMock()
+        # db.query.filter_by.return_value = MagicMock()
         mock_get_db.return_value = db
 
         mock_created_card = fake_card()
         mock_create.return_value = mock_created_card
 
         # Act
-        response = create_card(mock_user, db)
+        response = create_card(mock_user, mock_get_db)
 
         # Assert
         assert response.status_code == status.HTTP_201_CREATED
