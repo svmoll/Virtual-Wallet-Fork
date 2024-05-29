@@ -5,18 +5,18 @@ from ....core.db_dependency import get_db
 from app.api.routes.accounts.schemas import AccountViewDTO
 from app.api.routes.accounts.service import withdrawal_request
 from typing import Annotated
-from ..users.schemas import UserDTO
+from ..users.schemas import UserViewDTO
 from ...auth_service import auth
-
+from decimal import Decimal
 
 
 account_router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
 @account_router.put("/withdrawal")
 def create_withdrawal(
-    current_user: Annotated[UserDTO, Depends(auth.get_user_or_raise_401)], 
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], 
     db: Session = Depends(get_db),
-    withdrawal_amount: float = Body()
+    withdrawal_amount: Decimal = Body()
     ):
     withdrawal_request(withdrawal_amount,current_user,db)
 
