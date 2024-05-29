@@ -104,4 +104,5 @@ def delete_draft(sender_account: str, transaction_id: int, db: Session):
     db.commit()
 
 
-# get transactions goes here - use hybrid property ?
+def accept_incoming_transaction():
+    pass

@@ -9,6 +9,7 @@ from .service import (
     update_draft_transaction,
     confirm_draft_transaction,
     delete_draft,
+    accept_incoming_transaction,
 )
 from ..users.schemas import UserViewDTO
 from ...auth_service import auth
@@ -83,3 +84,12 @@ def delete_draft_transaction(
     delete_draft(current_user.username, transaction_id, db)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@transaction_router.post("/{transaction_id}/accept")
+def accept_transaction(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    transaction_id: int,
+    db: Session = Depends(get_db),
+):
+    pass
