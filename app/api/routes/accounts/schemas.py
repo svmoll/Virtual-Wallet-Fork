@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class AccountViewDTO(BaseModel):
     id: int
     username: str
-    balance: int
+    balance: float
     _is_blocked: bool
 
     @property
