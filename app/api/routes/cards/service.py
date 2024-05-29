@@ -57,7 +57,7 @@ def create(current_user: UserDTO, db: Session):
     return new_card
 
 
-def get_card_by_id(id:int, db: Session = Depends(get_db)) -> Card:
+def get_card_by_id(id:int, db: Session) -> Card:
     card = db.query(Card).filter_by(id=id).first()
 
     if not card:
