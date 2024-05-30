@@ -4,7 +4,7 @@ from . import service
 from ....core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from ..users.schemas import UserViewDTO
-from .service import create,delete
+from .service import create, delete, get_card_by_id
 from ...auth_service import auth
 from typing import Annotated
 from ...utils import responses
@@ -22,24 +22,31 @@ def create_card(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_ra
                 "message": f"New card for username {current_user.username} is created successfully."
             },
         )
-         
 
-
-@card_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@card_router.delete("/{id}")
 def delete_card(
         id: int, 
         current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], 
         db: Session = Depends(get_db)
         ):
-        # Assumption: User's cards are shown to him in front end, so no checks for whether the card belongs to them.
-        delete(id, db)
-        
-        return JSONResponse(
-            status_code=status.HTTP_204_NO_CONTENT,
-            content={
-            "message": f"Your card has been deleted successfully."
-            },
-        )
-        # To determine how to handle when card expires?
+
+        existing_card = get_card_by_id(id,db)
+
+        if existing_card.account_id == current_user.id:
+            delete(id, db)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                "message": f"Your card with number: {existing_card.card_number} has been deleted successfully."
+                },
+            )
+            # To determine how to handle when card expires?
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                "message": f"Card with ID of {id} does not belong to username: {current_user.username}. "
+                },
+            )
 
 

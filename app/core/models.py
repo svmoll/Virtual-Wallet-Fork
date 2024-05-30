@@ -86,7 +86,7 @@ class Account(Base):
     balance: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0.00, nullable=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    accounts_cards = relationship("Card", back_populates="cards_accounts")
+    accounts_cards = relationship("Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts")
 
     sent_transactions = relationship(
         "Transaction",
