@@ -1,4 +1,5 @@
 from datetime import datetime
+from pytz import timezone
 from decimal import Decimal
 from .schemas import TransactionDTO
 from ...utils.responses import DatabaseError
@@ -78,6 +79,8 @@ def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Sess
 
     account = get_account_by_username(sender_account, db)
 
+    # checking for available funds
+
     transaction_draft.status = "pending"
     account.balance = account.balance - transaction_draft.amount
 
@@ -107,8 +110,10 @@ def accept_incoming_transaction(
     account = get_account_by_username(receiver_account, db)
 
     account.balance = account.balance + incoming_transaction.amount
+
     incoming_transaction.status = "completed"
-    incoming_transaction.transaction_date = datetime.now()
+    # datetime.utcnow()
+    incoming_transaction.transaction_date = datetime.now(timezone.utc)
 
     try:
         db.commit()
@@ -118,6 +123,12 @@ def accept_incoming_transaction(
         raise DatabaseError("Database operation failed") from e
 
     return account.balance
+
+
+def decline_incoming_transaction(
+    receiver_account: str, transaction_id: int, db: Session
+):
+    pass
 
 
 # Helper Functions
