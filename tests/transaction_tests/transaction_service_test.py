@@ -5,11 +5,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 from decimal import Decimal
-from app.core.models import Transaction
+from app.core.models import Account, Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.service import (
+    accept_incoming_transaction,
     create_draft_transaction,
     delete_draft,
+    get_account_by_username,
     update_draft_transaction,
     get_draft_transaction_by_id,
     confirm_draft_transaction,
@@ -42,11 +44,30 @@ def fake_transaction_draft():
         category_id=1,
         description="test_description",
         status="draft",
-        # is_recurring=False,
         is_flagged=False,
     )
     transaction.id = 1
     return transaction
+
+
+def fake_incoming_transaction():
+    transaction = Transaction(
+        sender_account=TEST_SENDER_ACCOUNT,
+        receiver_account="test_receiver",
+        amount=11.30,
+        category_id=1,
+        description="test_description",
+        status="pending",
+        is_flagged=False,
+    )
+    transaction.id = 1
+    return transaction
+
+
+def fake_account():
+    account = Account(username="test_username", balance=22, is_blocked=False)
+    account.id = 1
+    return account
 
 
 Session = sessionmaker()
@@ -94,14 +115,6 @@ class TransactionsServiceShould(unittest.TestCase):
         db.refresh.assert_called_once()
         self.assertIsInstance(result, Transaction)
         self.assertEqual(expected_transaction, result)
-        # self.assertEqual(result.sender_account, "test_sender")
-        # self.assertEqual(result.receiver_account, "test_receiver")
-        # self.assertEqual(result.amount, Decimal("11.3"))
-        # self.assertEqual(result.category_id, 1)
-        # self.assertEqual(result.description, "test_description")
-        # self.assertEqual(result.transaction_date, None)
-        # self.assertEqual(result.status, "draft")
-        # self.assertEqual(result.is_flagged, False)
 
     def test_createDraftTransaction_raisesHTTPExceptionForNonExistentReceiver(self):
         # Arrange
@@ -199,17 +212,56 @@ class TransactionsServiceShould(unittest.TestCase):
         db.query.return_value.filter.assert_called_once()
         db.query.return_value.filter.return_value.first.assert_called_once()
 
+    @patch("app.core.db_dependency.get_db")
+    def test_getAccountByUsername_returnsAccountWhenExists(self, mock_get_db):
+        # Arrange
+        username = "test_username"
+        db = fake_db()
+        mock_get_db.return_value = db
+        account = fake_account()
+        db.query.return_value.filter.return_value.first.return_value = account
+
+        # Act
+        result = get_account_by_username(username, db)
+
+        # Assert
+        self.assertEqual(result, account)
+        db.query.assert_called_once_with(Account)
+        db.query.return_value.filter.assert_called_once()
+        db.query.return_value.filter.return_value.first.assert_called_once()
+
+    @patch("app.core.db_dependency.get_db")
+    def test_getAccountByUsername_raises404WhenAccountIsNone(self, mock_get_db):
+        # Arrange
+        username = "test_username"
+        db = fake_db()
+        mock_get_db.return_value = db
+        db.query.return_value.filter.return_value.first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            get_account_by_username(username, db)
+
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "Account not found!")
+        db.query.assert_called_once_with(Account)
+        db.query.return_value.filter.assert_called_once()
+        db.query.return_value.filter.return_value.first.assert_called_once()
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
     @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_confirmDraftTransaction_returnsTransactionWithPendingStatus(
-        self, get_transaction_mock
+        self, get_transaction_mock, get_account_mock
     ):
         # Arrange
         sender_account = TEST_SENDER_ACCOUNT
         transaction_id = 1
+        account = fake_account()
         db = fake_db()
         db.commit = Mock()
         db.refresh = Mock()
         get_transaction_mock.return_value = fake_transaction_draft()
+        get_account_mock.return_value = account
 
         # Act
         result = confirm_draft_transaction(sender_account, transaction_id, db)
@@ -218,6 +270,7 @@ class TransactionsServiceShould(unittest.TestCase):
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertEqual(result.status, "pending")
+        self.assertEqual(account.balance, 10.70)
 
     @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_DeleteDraft_returnsNoneWhenSuccessful(self, get_transaction_mock):
@@ -237,6 +290,31 @@ class TransactionsServiceShould(unittest.TestCase):
         db.delete.assert_called_once_with(transaction)
         db.commit.assert_called_once()
         self.assertIsNone(result)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
+    def test_acceptIncomingTransaction_returnsBalanceAndChangesStatusWhenSuccessful(
+        self, get_incoming_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        receiver_account = "test_receiver"
+        transaction_id = 1
+        account = fake_account()
+        transaction = fake_incoming_transaction()
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_account_mock.return_value = account
+        get_incoming_transaction_mock.return_value = transaction
+
+        # Act
+        result = accept_incoming_transaction(receiver_account, transaction_id, db)
+
+        # Act
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
+        self.assertEqual(result, 33.30)
+        self.assertEqual(transaction.status, "completed")
 
 
 if __name__ == "__main__":
