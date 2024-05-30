@@ -1,12 +1,13 @@
 from datetime import datetime
-from pytz import timezone
+import pytz
 from decimal import Decimal
 from .schemas import TransactionDTO
-from ...utils.responses import DatabaseError
+from ...utils.responses import DatabaseError, InsufficientFundsError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
 from app.core.models import Account, Transaction
+from ..accounts.service import get_account_by_username
 from app.core.db_dependency import get_db
 
 
@@ -76,13 +77,13 @@ def update_draft_transaction(
 
 def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
     transaction_draft = get_draft_transaction_by_id(transaction_id, sender_account, db)
-
     account = get_account_by_username(sender_account, db)
 
-    # checking for available funds
+    if account.balance < transaction_draft.amount:
+        raise InsufficientFundsError()
 
     transaction_draft.status = "pending"
-    account.balance = account.balance - transaction_draft.amount
+    account.balance -= transaction_draft.amount
 
     try:
         db.commit()
@@ -112,8 +113,7 @@ def accept_incoming_transaction(
     account.balance = account.balance + incoming_transaction.amount
 
     incoming_transaction.status = "completed"
-    # datetime.utcnow()
-    incoming_transaction.transaction_date = datetime.now(timezone.utc)
+    incoming_transaction.transaction_date = datetime.now(pytz.utc)
 
     try:
         db.commit()
@@ -128,7 +128,16 @@ def accept_incoming_transaction(
 def decline_incoming_transaction(
     receiver_account: str, transaction_id: int, db: Session
 ):
-    pass
+    incoming_transaction = get_incoming_transaction_by_id(
+        receiver_account, transaction_id, db
+    )
+    sender_account = get_account_by_username(incoming_transaction.sender_account, db)
+
+    sender_account.balance += incoming_transaction.amount
+    incoming_transaction.status = "declined"
+    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+
+    db.commit()
 
 
 # Helper Functions
@@ -168,12 +177,3 @@ def get_incoming_transaction_by_id(
         raise HTTPException(status_code=404, detail="Transaction not found!")
 
     return incoming_transaction
-
-
-def get_account_by_username(username: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(username == username).first()
-
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found!")
-
-    return account

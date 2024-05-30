@@ -34,6 +34,14 @@ class InternalServerError(Response):
 class DatabaseError(Exception):
     """Exception raised for database-related errors."""
 
-    def __init__(self, message="Database operation failed"):
+    def __init__(self, message="Database operation failed", status_code=500):
         self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+
+class InsufficientFundsError(Exception):
+    def __init__(self, message="Insufficient funds", status_code=400):
+        self.message = message
+        self.status_code = status_code
         super().__init__(self.message)
