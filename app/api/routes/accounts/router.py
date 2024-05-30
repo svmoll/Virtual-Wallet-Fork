@@ -2,7 +2,6 @@ from fastapi import APIRouter, Body, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from ....core.db_dependency import get_db
-from app.api.routes.accounts.schemas import AccountViewDTO
 from app.api.routes.accounts.service import withdrawal_request
 from typing import Annotated
 from ..users.schemas import UserViewDTO
@@ -23,7 +22,7 @@ def create_withdrawal(
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={
-            "message": f"The withdrawal of {withdrawal_amount} leva is being processed."
+            'message': f'The withdrawal of {withdrawal_amount} leva has been being processed.'
         },
     )
 

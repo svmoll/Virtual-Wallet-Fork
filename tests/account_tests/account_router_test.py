@@ -1,9 +1,9 @@
 import unittest
-from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, Mock
 from app.core.models import Account
-from fastapi import status
 from app.api.routes.accounts.router import create_withdrawal
+from fastapi.responses import JSONResponse
+import json
 
 def fake_account():
     return Account(
@@ -14,42 +14,45 @@ def fake_account():
     )
 
 def fake_db():
-    return MagicMock()
+    return Mock()
 
 def fake_user():
-    return 
+    return Mock()
 
 class AccountRouter_Should(unittest.TestCase):
     
-    @patch("app.api.routes.accounts.service.withdrawal_request")
-    @patch("app.api.auth_service.auth.get_user_or_raise_401")
-    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.accounts.service.get_account_by_id")
     def test_accountWithdrawal_returnsCorrectStatusCode_WhenSuccessful(
         self,
-        mock_withdrawal_request, 
-        mock_get_user_or_raise_401_mock,
-        mock_get_db):
+        mock_get_account_by_id,
+        ):
 
         #Arrange
-        withdrawal_amount = 1000
-        
-        mock_withdrawal_request.side_effects = None
-        
-        mock_get_db.return_value = fake_db()
-        mock_get_db.query = MagicMock()
+        mock_get_db = fake_db()
+        mock_current_user = fake_user()
 
-        mock_get_user_or_raise_401_mock = fake_user()
+        mock_account = fake_account()
+        mock_account.balance = 100.00
+        mock_account.is_blocked = False
+        mock_get_account_by_id.return_value = mock_account
+
+        withdrawal_amount = 10.00
 
         #Act
-        result = create_withdrawal(
-                                    mock_get_user_or_raise_401_mock, 
+        response = create_withdrawal(
+                                    mock_current_user, 
                                     mock_get_db,
                                     withdrawal_amount
                                     )
-
+        
         #Assert
-        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, 201)
 
-
+        response_body = response.body.decode('utf-8')
+        response_body_dict = json.loads(response_body)
+        self.assertEqual(response_body_dict, {
+            'message': f'The withdrawal of {withdrawal_amount} leva has been being processed.'
+        })
 
 

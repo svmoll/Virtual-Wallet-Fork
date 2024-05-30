@@ -1,9 +1,10 @@
 import unittest
-from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, Mock
 from app.core.models import Account
+from app.api.routes.accounts.schemas import AccountViewDTO
 from fastapi import HTTPException
 from app.api.routes.accounts.service import withdrawal_request
+
 
 def fake_account():
     return Account(
@@ -14,7 +15,7 @@ def fake_account():
     )
 
 def fake_accountdto():
-    return Account(
+    return AccountViewDTO(
     id = 1,
     username = 'Grippen',
     balance = 1234.56,
@@ -22,113 +23,110 @@ def fake_accountdto():
     )
 
 def fake_db():
-    return MagicMock()
+    return Mock()
 
 def fake_user():
-    return 
+    return Mock()
 
 class AccountService_Should(unittest.TestCase):
 
     @patch("app.api.routes.accounts.service.get_account_by_id") 
-    @patch("app.core.db_dependency.get_db")
     def test_accountWithdrawal_raisesBadREquest_WhenAccountHasLessThanTheWithdrawalAmount(
         self,
-        mock_get_account_by_id,
-        mock_get_db
+        mock_get_account_by_id
         ):
 
         #Arrange
-        withdrawal_amount = 9999.99
-        mock_account = fake_accountdto()
+        mock_get_db = fake_db()
+        mock_current_user = fake_user()
 
-        mock_get_account_by_id = Mock()
+        mock_account = fake_accountdto()
+        mock_account.balance = 50.00  # Mock account balance
         mock_get_account_by_id.return_value = mock_account
 
-        mock_get_db.return_value = fake_db()
+        withdrawal_amount = 100
 
         #Act
-        try:
-            withdrawal_request(withdrawal_amount, mock_account, mock_get_db)
-        except HTTPException as exc:
-            result_status_code = exc.status_code
-            result_detail = exc.detail
-
-        #Assert
-        self.assertEqual(result_status_code, 400)
-        self.assertEqual("Insufficient amount to withdraw", result_detail)
+        with self.assertRaises(HTTPException) as context:
+            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
+        
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, f"Insufficient amount to withdraw {withdrawal_amount} leva.")
 
 
-    @patch("app.core.db_dependency.get_db")
-    def test_accountWithdrawal_raisesBadRequest_WhenTheWithdrawalAmountIsNegative(
-        self, 
-        mock_get_db
+    @patch("app.api.routes.accounts.service.get_account_by_id") 
+    def test_accountWithdrawal_raisesBadRequest_WhenTheAccountIsBlocked(
+        self,
+        mock_get_account_by_id
         ):
 
         #Arrange
-        withdrawal_amount = -5
-        account = fake_account()
+        mock_get_db = fake_db()
+        mock_current_user = fake_user()
 
-        db = fake_db()
-        mock_get_db.return_value = db
+        mock_account = fake_accountdto()
+        mock_account.balance = 100.00
+        mock_account.is_blocked = True
+        mock_get_account_by_id.return_value = mock_account
+
+        withdrawal_amount = 50.00
 
         #Act
-        try:
-            withdrawal_request(withdrawal_amount, account, mock_get_db)
-        except HTTPException as exc:
-            result_status_code = exc.status_code
-            result_detail = exc.detail
+        with self.assertRaises(HTTPException) as context:
+            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
+        
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, f"Account is blocked. Contact Customer Support.")
 
-        #Assert
-        self.assertEqual(result_status_code, 400)
-        self.assertIn("Withdrawals should be written as a positive number.", result_detail)
+    @patch("app.api.routes.accounts.service.get_account_by_id") 
+    def test_accountWithdrtest_accountWithdrawal_raisesBadRequest_WhenTheWithdrawalAmountIsNegative(
+        self,
+        mock_get_account_by_id
+        ):
 
-    @patch("app.core.db_dependency.get_db")
+        #Arrange
+        mock_get_db = fake_db()
+        mock_current_user = fake_user()
+
+        mock_account = fake_accountdto()
+        mock_get_account_by_id.return_value = mock_account
+
+        withdrawal_amount = -50.00
+
+        #Act
+        with self.assertRaises(HTTPException) as context:
+            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
+        
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, f"Withdrawals should be a positive number.")
+
+#Fix below
+    @patch("app.api.routes.accounts.service.get_account_by_id") 
     def test_accountWithdrawal_returnCorrectBalance_WhenTheWithdrawalIsSuccessful(
         self, 
-        mock_get_db
+        mock_get_account_by_id
         ):
 
         #Arrange
-        withdrawal_amount = 1233.56
-        mock_account = fake_account()
+        withdrawal_amount = 50
+        mock_get_db = fake_db()
+
+        mock_account = fake_accountdto()
+        mock_account.balance = 100
+        mock_get_account_by_id.return_value = mock_account
+        
         expected_balance = mock_account.balance - withdrawal_amount
 
-        mock_db_session = fake_db()
-        mock_query = MagicMock()
-        mock_db_session.query.return_value = mock_query
-        mock_query.filter().first.return_value = mock_account
-        mock_get_db.return_value = mock_db_session
-
         # Act
-        withdrawal_request(withdrawal_amount, mock_account, mock_get_db)
+        result = withdrawal_request(
+                            withdrawal_amount, 
+                            mock_account, 
+                            mock_get_db
+                            )
+        actual_account_balance = result.balance
 
         # Assert
-        actual_account_balance = mock_account.balance
         self.assertEqual(actual_account_balance, expected_balance)
-
-    @patch("app.core.db_dependency.get_db")
-    def test_accountWithdrawal_raisesBadRequest_WhenTheAccountIsBlocked(
-        self, 
-        mock_get_db
-        ):
-
-        #Arrange
-        withdrawal_amount = 10
-        mock_account = fake_account()
-        mock_account.is_blocked = True
-
-        mock_get_db.return_value = fake_db()
-
-        #Act
-        try:
-            withdrawal_request(withdrawal_amount, mock_account, mock_get_db)
-        except HTTPException as exc:
-            result_status_code = exc.status_code
-            result_detail = exc.detail
-
-        #Assert
-        self.assertEqual(result_status_code, 400)
-        self.assertIn("Account is blocked. Contact Customer Support.", result_detail)
 
 
 if __name__ == '__main__':
