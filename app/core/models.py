@@ -83,7 +83,7 @@ class Account(Base):
     username: Mapped[str] = mapped_column(
         String(length=25), ForeignKey("users.username"), nullable=False
     )
-    balance: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0.00, nullable=False)
+    balance: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=0.00, nullable=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     accounts_cards = relationship("Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts")
