@@ -6,8 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
 from app.core.models import User
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO
-from app.api.routes.users.service import create, update_user, get_user
+from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
+from app.api.routes.users.service import create, update_user, get_user, search_user
 
 
 def fake_user_dto():
@@ -290,3 +290,95 @@ class UsrServices_Should(unittest.TestCase):
             get_user(1, db)
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "User not found")
+
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byUsername(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(username="tester", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_usernameNotFound(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(username="tester", db=db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byEmail(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(email="email@example.com", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_emailNotFound(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(email="email@example.com", db=db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byPhoneNumber(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(phone_number="1234567890", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_phoneNumberNotFound(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(phone_number="1234567890", db=db)

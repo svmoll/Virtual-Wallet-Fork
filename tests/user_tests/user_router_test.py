@@ -1,11 +1,14 @@
 import asyncio
+import json
 import unittest
+
+from fastapi import HTTPException
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch, Mock, MagicMock, create_autospec
 from fastapi.testclient import TestClient
 from app.main import app
 from app.api.auth_service.auth import authenticate_user
-from app.api.routes.users.router import register_user, login, update
+from app.api.routes.users.router import register_user, login, update, search
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
 
 client = TestClient(app)
@@ -159,5 +162,73 @@ class UserRouter_Should(unittest.TestCase):
         self.assertEqual(f"User testuser updated profile successfully.", response)
         mock_update_user.assert_called_once()
 
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.search_user")
+    def test_search_byUsername(self, mock_search_user, mock_get_db, mock_get_user):
+        # Arrange
+        mock_search_user.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
 
+        # Act
+        response = search(fake_user_view(), "testuser", db)
+        response_body = json.loads(response.body.decode('utf-8'))
 
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"username": "testuser", "email": "test@example.com"}, response_body)
+        mock_search_user.assert_called_once()
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.search_user")
+    def test_search_byEmail(self, mock_search_user, mock_get_db, mock_get_user):
+        # Arrange
+        mock_search_user.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Act
+        response = search(fake_user_view(), None, "test@example.com", db)
+        response_body = json.loads(response.body.decode('utf-8'))
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"username": "testuser", "email": "test@example.com"}, response_body)
+        mock_search_user.assert_called_once()
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.search_user")
+    def test_search_byPhoneNumber(self, mock_search_user, mock_get_db, mock_get_user):
+        # Arrange
+        mock_search_user.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Act
+        response = search(fake_user_view(), None, None,"1234567890", db)
+        response_body = json.loads(response.body.decode('utf-8'))
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"username": "testuser", "email": "test@example.com"}, response_body)
+        mock_search_user.assert_called_once()
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.search_user")
+    def test_search_RaisesBadRequestWhenNoQueryParamsAreAdded(self, mock_search_user, mock_get_db, mock_get_user):
+        # Arrange
+        mock_search_user.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            search(fake_user_view( ), None, None, None, db)

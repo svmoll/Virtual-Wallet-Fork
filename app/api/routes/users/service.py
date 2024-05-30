@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from app.core.db_dependency import get_db
-from .schemas import UserDTO, UpdateUserDTO, UserShowDTO
+from .schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
 from app.core.models import User, Account
 from app.api.auth_service.auth import hash_pass
-from sqlalchemy.exc import IntegrityError, DataError
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Depends
 
 
@@ -43,6 +43,8 @@ def create(user: UserDTO, db: Session):
                 status_code=400, detail="Could not complete registration"
             ) from e
 
+# Todo catch some other error exception
+# Todo add messages to logger
 
 def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
     try:
@@ -100,3 +102,21 @@ def get_user(id, db: Session = Depends(get_db)):
     )
 
     return user
+
+def search_user(username: str = None, email: str = None, phone_number: str = None , db: Session = Depends(get_db)):
+
+    if username:
+        user = db.query(User).filter_by(username=username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User with that username was not found")
+        return UserFromSearchDTO(username=user.username, email=user.email)
+    elif email:
+        user = db.query(User).filter_by(email=email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User with that email was not found")
+        return UserFromSearchDTO(username=user.username, email=user.email)
+    elif phone_number:
+        user = db.query(User).filter_by(phone_number=phone_number).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User with that phone number was not found")
+        return UserFromSearchDTO(username=user.username, email=user.email)

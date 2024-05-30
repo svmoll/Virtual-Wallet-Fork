@@ -1,6 +1,6 @@
 from datetime import timedelta
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from . import service
@@ -8,6 +8,7 @@ from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from .schemas import UserDTO, UserViewDTO, UpdateUserDTO, UserShowDTO
 from ...auth_service import auth
+from fastapi.responses import JSONResponse, Response
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
@@ -69,3 +70,21 @@ def update(
     updated_user = service.update_user(current_user.id, update_info, db)
 
     return f"User {updated_user.username} updated profile successfully."
+
+@user_router.get("/search")
+def search(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    username: Optional[str] = Query(None, description="Find by username"),
+    email: Optional[str] = Query(None, description="Find by email"),
+    phone_number: Optional[str] = Query(None, description="Find by phone number"),
+    db: Session = Depends(get_db)
+):
+    if username is None and email is None and phone_number is None:
+        raise HTTPException(status_code=400, detail="Username or Email or Phone Number is required for search")
+    user = service.search_user(username, email, phone_number, db)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={f"username": user.username, "email": user.email,
+        },
+    )
