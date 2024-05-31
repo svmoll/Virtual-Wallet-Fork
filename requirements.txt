@@ -2,7 +2,7 @@ fastapi==0.111.0
 jose==1.0.0
 mariadb==1.1.10
 pydantic==2.7.2
-pydantic_core==2.18.2
+pydantic_core==2.18.3
 PyMySQL==1.1.1
 python_jose==3.3.0
 python-multipart==0.0.7
