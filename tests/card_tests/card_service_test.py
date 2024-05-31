@@ -1,10 +1,7 @@
 import unittest
-from unittest.mock import patch, Mock, call
-from app.api.routes.users.schemas import UserDTO
-from app.api.routes.cards.schemas import CardDTO  
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timedelta
+from unittest.mock import patch, Mock, call 
 from app.core.models import Card
+from datetime import timedelta, date
 from fastapi import HTTPException
 from app.api.routes.cards.service import (
                                         unique_card_number, 
@@ -15,9 +12,6 @@ from app.api.routes.cards.service import (
                                         get_card_by_id,
                                         delete
                                         )
-from app.core.models import Card
-from app.api.routes.cards.service import unique_card_number, create_cvv_number, create_card_number, create_expiration_date, get_user_fullname
-from datetime import date, timedelta
 
 def fake_card():
     return Card(
@@ -28,43 +22,14 @@ def fake_card():
         cvv= "123"
     )
 
-def fake_card_dto():
-    return CardDTO(
-        id=1,
-        account_id=1,
-        card_number= "1111222233334444",
-        expiration_date= "2024-02-02",
-        card_holder= "Dimitar Berbatov",
-        cvv= "123"
-    )
-
-def fake_card_dto():
-    return CardDTO(
-        id=1,
-        account_id=1,
-        card_number= "1111222233334444",
-        expiration_date= "2024-02-02",
-        card_holder= "Dimitar Berbatov",
-        cvv= "123"
-    )
 
 def fake_user_view():
-    return UserDTO(
-        username="testuser", 
-        password="User!234",
-        phone_number="1234567891",
-        email="email@email.com",
-        fullname="Georgi Stoev"
-    )
-
-Session = sessionmaker()
+    return Mock()
 
 
 def fake_db():
-    session_mock = Mock(spec=Session)
-    session_mock.query = Mock()
-    session_mock.query.filter = Mock()
-    return session_mock
+    return Mock()
+
 
 class CardsServiceShould(unittest.TestCase):
 
@@ -212,7 +177,7 @@ class CardsServiceShould(unittest.TestCase):
     @patch('app.api.routes.cards.service.get_db')
     def test_deleteCard_trulyDeleted(self, mock_get_db, mock_get_card_by_id):
         # Arrange
-        card = fake_card_dto()
+        card = fake_card()
         db = fake_db()
         db.delete = Mock()
         db.commit = Mock()

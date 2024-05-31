@@ -31,7 +31,7 @@ def create_cvv_number():
     digits = string.digits 
     random_cvv = ''.join(random.choice(digits) for _ in range(3))
     hashed_cvv = hash_cvv(random_cvv)
-    return hashed_cvv                                                   # hash the cvv. need to be stored somewhere to retrieve
+    return hashed_cvv
 
 
 def hash_cvv(random_cvv):

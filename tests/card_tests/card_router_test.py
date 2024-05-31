@@ -3,7 +3,6 @@ from unittest.mock import patch, Mock
 from fastapi.responses import JSONResponse
 from app.api.routes.users.schemas import UserViewDTO
 from app.api.routes.cards.schemas import DeleteCardDTO
-from app.core.models import Card
 from app.api.routes.cards.router import create_card, delete_card
 import json
 

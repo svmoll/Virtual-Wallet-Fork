@@ -14,7 +14,8 @@ card_router = APIRouter(prefix="/cards", tags=["Cards"])
 
 @card_router.post("/")
 def create_card(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], db: Session = Depends(get_db)):
-        created_card = create(current_user, db)
+        
+        create(current_user, db)
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
@@ -22,6 +23,7 @@ def create_card(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_ra
                 "message": f"New card for username: {current_user.username} is created successfully."
             },
         )
+
 
 @card_router.delete("/{id}")
 def delete_card(
@@ -40,7 +42,6 @@ def delete_card(
                 "message": f"Your card with number: {existing_card.card_number} has been deleted successfully."
                 },
             )
-            # To determine how to handle when card expires?
         else:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
