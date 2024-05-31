@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock, MagicMock
-
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
