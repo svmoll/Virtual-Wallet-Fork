@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock
 from fastapi.responses import JSONResponse
 from app.api.routes.users.schemas import UserViewDTO
 from app.api.routes.cards.schemas import DeleteCardDTO
-from app.api.routes.cards.router import create_card, delete_card
+from app.api.routes.cards.router import create_card, delete_card, view_cards
 import json
 
 def fake_card():
@@ -13,14 +13,17 @@ def fake_card():
                         card_number='8765-4321-1234-5678'
                         )
 
+
 def fake_db():
-    return Mock()   
+    return Mock()
+
 
 def fake_user():
     return UserViewDTO(
          id=1,
          username='test_user'
     )
+
 
 class CardRouter_Should(unittest.TestCase):
 
@@ -120,4 +123,57 @@ class CardRouter_Should(unittest.TestCase):
             'message': f"Card with ID of {card_to_delete.id} does not belong to username: {mock_user.username}. "
         })
         mock_get_card_by_id.assert_called_once_with(1, db)
+
+
+    # @patch('app.api.routes.cards.router.get_view')
+    # def test_ViewUserCards_returnsCardsCorrectStatusCodeAndMsg_WhenSuccessful(
+    #     self,
+    #     mock_get_view
+    #     ):
+        
+    #     # Arrange
+    #     mock_user = fake_user()
+    #     mock_db = fake_db()
+
+    #     mock_view = [fake_card(),]
+    #     mock_get_view.return_value = mock_view
+
+    #     # Act
+    #     response = view_cards(mock_user, mock_db)
+
+    #     # Assert
+    #     self.assertIsInstance(response, JSONResponse)
+    #     self.assertEqual(response.status_code, 200)
+    #     # response_body = response.body.decode('utf-8')
+    #     # response_body_dict = json.loads(response_body)
+    #     # self.assertEqual(response_body_dict, 
+    #     #                  {'message': f'New card for username: {mock_user.username} is created successfully.'}
+    #     #                  )
+    #     # mock_view.assert_called_once_with(mock_user, mock_db)
+
+    #     @patch('app.api.routes.cards.router.get_view')
+    #     def test_ViewUserCards_returnsNoCards_WhenNoneAreAssociatedWithUser(
+    #     self,
+    #     mock_get_view
+    #     ):
+        
+    #     # Arrange
+    #     mock_user = fake_user()
+    #     mock_db = fake_db()
+
+    #     mock_view = [fake_card(),]
+    #     mock_get_view.return_value = mock_view
+
+    #     # Act
+    #     response = view_cards(mock_user, mock_db)
+
+    #     # Assert
+    #     self.assertIsInstance(response, JSONResponse)
+    #     self.assertEqual(response.status_code, 200)
+    #     # response_body = response.body.decode('utf-8')
+    #     # response_body_dict = json.loads(response_body)
+    #     # self.assertEqual(response_body_dict, 
+    #     #                  {'message': f'New card for username: {mock_user.username} is created successfully.'}
+    #     #                  )
+    #     # mock_view.assert_called_once_with(mock_user, mock_db)
 

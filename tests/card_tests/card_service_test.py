@@ -14,13 +14,7 @@ from app.api.routes.cards.service import (
                                         )
 
 def fake_card():
-    return Card(
-        account_id=1,
-        card_number= "1111-2222-3333-4444",
-        expiration_date= "2024-02-02",
-        card_holder= "Dimitar Berbatov",
-        cvv= "123"
-    )
+    return Mock()
 
 
 def fake_user_view():
@@ -176,6 +170,26 @@ class CardsServiceShould(unittest.TestCase):
     @patch('app.api.routes.cards.service.get_card_by_id')
     @patch('app.api.routes.cards.service.get_db')
     def test_deleteCard_trulyDeleted(self, mock_get_db, mock_get_card_by_id):
+        # Arrange
+        card = fake_card()
+        db = fake_db()
+        db.delete = Mock()
+        db.commit = Mock()
+        mock_get_db.return_value = db
+
+        card_to_delete = Mock(spec=Card)
+        mock_get_card_by_id.return_value = card_to_delete
+
+        # Act
+        delete(card.id, db)
+
+        # Assert
+        mock_get_card_by_id.assert_called_once_with(card.id, db)
+        db.delete.assert_called_once_with(card_to_delete)
+        db.commit.assert_called_once()
+
+    @patch('app.api.routes.cards.service.get_card_by_id')
+    def test_deleteCard_trulyDeleted(self,  mock_get_card_by_id):
         # Arrange
         card = fake_card()
         db = fake_db()
