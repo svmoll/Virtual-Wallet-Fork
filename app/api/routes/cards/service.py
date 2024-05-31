@@ -79,5 +79,73 @@ def delete(id:int, db: Session):
     db.commit()
     
 
+#improving encryption using AES
+# from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+# from cryptography.hazmat.primitives import padding
+# from cryptography.hazmat.backends import default_backend
+# from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+# from cryptography.hazmat.primitives import hashes
+# import base64
+# import os
 
+# # Generate a secure random key for AES encryption
+# def generate_aes_key():
+#     return os.urandom(32)  # 256-bit key for AES-256
+
+# # Encrypt CVV using AES and encode result in Base64
+# def encrypt_cvv(cvv: str, key: bytes) -> str:
+#     # Convert CVV to bytes
+#     cvv_bytes = cvv.encode('utf-8')
+    
+#     # Generate a random IV (Initialization Vector)
+#     iv = os.urandom(16)
+    
+#     # Initialize AES cipher with CBC mode
+#     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+#     encryptor = cipher.encryptor()
+    
+#     # Pad the CVV bytes to match block size (16 bytes for AES)
+#     padder = padding.PKCS7(algorithms.AES.block_size).padder()
+#     padded_cvv_bytes = padder.update(cvv_bytes) + padder.finalize()
+    
+#     # Encrypt the padded CVV
+#     encrypted_cvv = encryptor.update(padded_cvv_bytes) + encryptor.finalize()
+    
+#     # Combine IV and encrypted CVV into a single string (Base64 encoded)
+#     encrypted_data = base64.b64encode(iv + encrypted_cvv).decode()
+    
+#     return encrypted_data
+
+# # Decrypt CVV using AES and decode from Base64
+# def decrypt_cvv(encrypted_cvv: str, key: bytes) -> str:
+#     # Decode Base64 and separate IV and encrypted CVV
+#     encrypted_data = base64.b64decode(encrypted_cvv.encode())
+#     iv = encrypted_data[:16]
+#     encrypted_cvv_bytes = encrypted_data[16:]
+    
+#     # Initialize AES cipher with CBC mode and decrypt
+#     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+#     decryptor = cipher.decryptor()
+#     decrypted_padded_cvv_bytes = decryptor.update(encrypted_cvv_bytes) + decryptor.finalize()
+    
+#     # Remove padding from decrypted CVV
+#     unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+#     decrypted_cvv_bytes = unpadder.update(decrypted_padded_cvv_bytes) + unpadder.finalize()
+    
+#     # Convert decrypted CVV bytes to string
+#     decrypted_cvv = decrypted_cvv_bytes.decode('utf-8')
+    
+#     return decrypted_cvv
+
+# # Example usage:
+# key = generate_aes_key()  # Generate a new AES key (should be securely stored)
+
+# # Encrypt CVV
+# original_cvv = '123'
+# encrypted_cvv = encrypt_cvv(original_cvv, key)
+# print(f"Encrypted CVV (Base64 encoded): {encrypted_cvv}")
+
+# # Decrypt CVV
+# decrypted_cvv = decrypt_cvv(encrypted_cvv, key)
+# print(f"Decrypted CVV: {decrypted_cvv}")
 
