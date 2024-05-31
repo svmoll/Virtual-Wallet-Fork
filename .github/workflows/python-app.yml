@@ -68,4 +68,6 @@ jobs:
       run: |
         python -m unittest discover -s tests/user_tests -p "*_test.py"
         python -m unittest discover -s tests/auth -p "*_test.py"
-        python -m unittest discover -s tests/transaction_tests -p "*_test.py"     
+        python -m unittest discover -s tests/transaction_tests -p "*_test.py"
+        python -m unittest discover -s tests/account_tests -p "*_test.py"
+        python -m unittest discover -s tests/card_tests -p "*_test.py"
