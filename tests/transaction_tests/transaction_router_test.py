@@ -147,6 +147,9 @@ class TransactionRouter_Should(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        expected_content = {"message": "Your balance is 33.3."}
+        response_content = json.loads(response.body.decode())
+        self.assertEqual(response_content, expected_content)
 
     @patch("app.core.db_dependency.get_db")
     @patch("app.api.routes.transactions.router.decline_incoming_transaction")
