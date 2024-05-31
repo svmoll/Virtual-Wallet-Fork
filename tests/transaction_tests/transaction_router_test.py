@@ -1,6 +1,6 @@
 import unittest
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 from fastapi import status
 from app.api.routes.users.schemas import UserViewDTO
 from app.core.models import Transaction
@@ -19,7 +19,30 @@ def fake_transaction():
 
 
 def fake_pending_transaction():
-    return MagicMock()
+    return Mock(
+        id=2,
+        sender_account="test_sender",
+        receiver_account="test_receiver",
+        amount=11.30,
+        category_id=1,
+        description="test_description",
+        status="pending",
+        is_flagged=False,
+    )
+
+
+# def fake_pending_transaction():
+#     transaction = Transaction(
+#         sender_account="test_sender",
+#         receiver_account="test_receiver",
+#         amount=11.30,
+#         category_id=1,
+#         description="test_description",
+#         status="pending",
+#         is_flagged=False,
+#     )
+#     transaction.id = 2
+#     return transaction
 
 
 def fake_transaction_dto():
@@ -61,7 +84,7 @@ class TransactionRouter_Should(unittest.TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     @patch("app.core.db_dependency.get_db")
-    @patch("app.api.routes.transactions.service.update_draft_transaction")
+    @patch("app.api.routes.transactions.router.update_draft_transaction")
     @patch("app.api.auth_service.auth.get_user_or_raise_401")
     def test_editDraftTransaction_returnsCorrectStatusCodeWhenSuccessful(
         self, mock_get_user, mock_update_draft_transaction, mock_get_db
@@ -83,20 +106,22 @@ class TransactionRouter_Should(unittest.TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     @patch("app.core.db_dependency.get_db")
-    @patch("app.api.routes.transactions.service.create_draft_transaction")
+    @patch("app.api.routes.transactions.router.confirm_draft_transaction")
     @patch("app.api.auth_service.auth.get_user_or_raise_401")
     def test_confirmTransaction_returnsCorrectStatusCodeWhenSuccessful(
-        self, mock_get_user, mock_confirm_draft_transaction, mock_get_db
+        self,
+        mock_get_user,
+        mock_confirm_draft_transaction,
+        mock_get_db,
     ):
-
         # Arrange
         transaction_id = 2
         db = fake_db()
         user = fake_user_view()
+
         mock_get_user.return_value = user
         mock_get_db.return_value = db
-        mock_confirmed_transaction = fake_pending_transaction()
-        mock_confirm_draft_transaction.return_value = mock_confirmed_transaction
+        mock_confirm_draft_transaction.return_value = fake_pending_transaction()
 
         # Act
         response = confirm_transaction(user, transaction_id, db)

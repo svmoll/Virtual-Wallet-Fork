@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import patch, Mock
 from app.core.models import Account
-from app.api.routes.accounts.schemas import AccountViewDTO
+
+# from app.api.routes.accounts.schemas import AccountViewDTO
 from fastapi import HTTPException
 from app.api.routes.accounts.service import withdrawal_request, get_account_by_username
 
@@ -10,8 +11,8 @@ def fake_account():
     return Account(id=1, username="Grippen", balance=1234.56, is_blocked=0)
 
 
-def fake_accountdto():
-    return AccountViewDTO(id=1, username="Grippen", balance=1234.56, is_blocked=False)
+# def fake_accountdto():
+#     return AccountViewDTO(id=1, username="Grippen", balance=1234.56, is_blocked=False)
 
 
 def fake_db():
@@ -33,7 +34,7 @@ class AccountService_Should(unittest.TestCase):
         mock_get_db = fake_db()
         mock_current_user = fake_user()
 
-        mock_account = fake_accountdto()
+        mock_account = fake_account()
         mock_account.balance = 50.00  # Mock account balance
         mock_get_account_by_id.return_value = mock_account
 
@@ -58,7 +59,7 @@ class AccountService_Should(unittest.TestCase):
         mock_get_db = fake_db()
         mock_current_user = fake_user()
 
-        mock_account = fake_accountdto()
+        mock_account = fake_account()
         mock_account.balance = 100.00
         mock_account.is_blocked = True
         mock_get_account_by_id.return_value = mock_account
@@ -83,7 +84,7 @@ class AccountService_Should(unittest.TestCase):
         mock_get_db = fake_db()
         mock_current_user = fake_user()
 
-        mock_account = fake_accountdto()
+        mock_account = fake_account()
         mock_get_account_by_id.return_value = mock_account
 
         withdrawal_amount = -50.00
@@ -107,7 +108,7 @@ class AccountService_Should(unittest.TestCase):
         withdrawal_amount = 50
         mock_get_db = fake_db()
 
-        mock_account = fake_accountdto()
+        mock_account = fake_account()
         mock_account.balance = 100
         mock_get_account_by_id.return_value = mock_account
 
