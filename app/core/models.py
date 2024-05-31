@@ -88,7 +88,7 @@ class Account(Base):
     )
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    accounts_cards = relationship("Card", back_populates="cards_accounts")
+    accounts_cards = relationship("Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts")
 
     sent_transactions = relationship(
         "Transaction",
@@ -115,11 +115,11 @@ class Card(Base):
         Integer, ForeignKey("accounts.id"), nullable=False
     )
     card_number: Mapped[str] = mapped_column(
-        String(length=16), unique=True, nullable=False
+        String(length=19), unique=True, nullable=False
     )
     expiration_date: Mapped[date] = mapped_column(Date, nullable=False)
     card_holder: Mapped[str] = mapped_column(String(length=50), nullable=False)
-    cvv: Mapped[str] = mapped_column(String(length=3), nullable=False)
+    cvv: Mapped[str] = mapped_column(String(length=50), nullable=False)
     design_path: Mapped[str] = mapped_column(String(length=150), nullable=True)
 
     cards_accounts = relationship("Account", back_populates="accounts_cards")
