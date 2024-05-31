@@ -312,6 +312,35 @@ class TransactionsServiceShould(unittest.TestCase):
     @patch("app.api.routes.transactions.service.get_account_by_username")
     @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
     @patch("app.api.routes.transactions.service.datetime")
+    def test_declineIncomingTransaction_returnsNoneAndChangesStatusWhenSuccessful(
+        self, datetime_mock, get_incoming_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        receiver_account = "test_receiver"
+        transaction_id = 1
+        account = fake_account()
+        transaction = fake_incoming_transaction()
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_account_mock.return_value = account
+        get_incoming_transaction_mock.return_value = transaction
+        fixed_datetime = datetime(2024, 5, 31, 12, 0, 0, tzinfo=pytz.utc)
+        datetime_mock.now.return_value = fixed_datetime
+
+        # Act
+        result = decline_incoming_transaction(receiver_account, transaction_id, db)
+
+        # Act
+        db.commit.assert_called_once()
+        self.assertEqual(result, None)
+        self.assertEqual(transaction.status, "declined")
+        self.assertTrue(transaction.transaction_date.tzinfo is not None)
+        self.assertEqual(transaction.transaction_date.tzinfo, pytz.utc)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
+    @patch("app.api.routes.transactions.service.datetime")
     def test_declineIncomingTransaction_returnsAmountToSenderAndChangesStatusToDeclined(
         self, datetime_mock, get_incoming_transaction_mock, get_account_mock
     ):

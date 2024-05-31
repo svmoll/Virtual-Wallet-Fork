@@ -11,6 +11,7 @@ from .service import (
     confirm_draft_transaction,
     delete_draft,
     accept_incoming_transaction,
+    decline_incoming_transaction,
 )
 
 # import service as service
@@ -95,4 +96,20 @@ def accept_transaction(
     transaction_id: int,
     db: Session = Depends(get_db),
 ):
-    pass
+    new_balance = accept_incoming_transaction(current_user.username, transaction_id, db)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": f"Your balance is {new_balance}."},
+    )
+
+
+@transaction_router.post("/{transaction_id}/decline")
+def decline_transaction(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    transaction_id: int,
+    db: Session = Depends(get_db),
+):
+    decline_incoming_transaction(current_user.usernam, transaction_id, db)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

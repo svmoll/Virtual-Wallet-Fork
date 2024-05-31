@@ -6,7 +6,9 @@ from app.api.routes.users.schemas import UserViewDTO
 from app.core.models import Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.router import (
+    accept_transaction,
     confirm_transaction,
+    decline_transaction,
     delete_draft_transaction,
     make_draft_transaction,
     edit_draft_transaction,
@@ -19,30 +21,7 @@ def fake_transaction():
 
 
 def fake_pending_transaction():
-    return Mock(
-        id=2,
-        sender_account="test_sender",
-        receiver_account="test_receiver",
-        amount=11.30,
-        category_id=1,
-        description="test_description",
-        status="pending",
-        is_flagged=False,
-    )
-
-
-# def fake_pending_transaction():
-#     transaction = Transaction(
-#         sender_account="test_sender",
-#         receiver_account="test_receiver",
-#         amount=11.30,
-#         category_id=1,
-#         description="test_description",
-#         status="pending",
-#         is_flagged=False,
-#     )
-#     transaction.id = 2
-#     return transaction
+    return MagicMock()
 
 
 def fake_transaction_dto():
@@ -57,7 +36,7 @@ def fake_db():
 
 
 def fake_user_view():
-    return UserViewDTO(id=1, username="testuser")
+    return MagicMock()
 
 
 class TransactionRouter_Should(unittest.TestCase):
@@ -145,6 +124,46 @@ class TransactionRouter_Should(unittest.TestCase):
 
         # Act
         response = delete_draft_transaction(user, transaction_id, db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.router.accept_incoming_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_acceptTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_accept_incoming_transaction, mock_get_db
+    ):
+        # Arrange
+        transaction_id = 2
+        db = fake_db()
+        user = fake_user_view()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_accept_incoming_transaction.return_value = 33.30
+
+        # Act
+        response = accept_transaction(user, transaction_id, db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.router.decline_incoming_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_declineTransaction_returnsCorrectStatusCodeWhenSuccessful(
+        self, mock_get_user, mock_decline_incoming_transaction, mock_get_db
+    ):
+        # Arrange
+        transaction_id = 2
+        db = fake_db()
+        user = fake_user_view()
+        mock_get_user.return_value = user
+        mock_get_db.return_value = db
+        mock_decline_incoming_transaction.return_value = None
+
+        # Act
+        response = decline_transaction(user, transaction_id, db)
 
         # Assert
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
