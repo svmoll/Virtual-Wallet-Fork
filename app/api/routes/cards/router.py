@@ -19,7 +19,7 @@ def create_card(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_ra
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
-                "message": f"New card for username {current_user.username} is created successfully."
+                "message": f"New card for username: {current_user.username} is created successfully."
             },
         )
 
@@ -49,4 +49,4 @@ def delete_card(
                 },
             )
 
-
+    # To determine how to handle when card expires?

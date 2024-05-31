@@ -3,16 +3,17 @@ from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
 from ..users.schemas import UserDTO
 from app.core.models import Card, User
-from datetime import datetime, timedelta
+from datetime import timedelta, date
+from hashlib import sha256, sha1
 import random
 import string
-from ...utils.responses import NotFound
 
 
 def create_card_number():
     digits = string.digits 
     random_card_number = ''.join(random.choice(digits) for _ in range(16)) # random.randint(0,9)
-    return random_card_number
+    formatted_card_number = '-'.join(random_card_number[i:i+4] for i in range(0, 16, 4))
+    return formatted_card_number
 
 
 def unique_card_number(db: Session):
@@ -23,13 +24,19 @@ def unique_card_number(db: Session):
 
 
 def create_expiration_date():
-    return datetime.now() + timedelta(days=1826)
+    return date.today() + timedelta(days=1826)
 
 
 def create_cvv_number():
     digits = string.digits 
     random_cvv = ''.join(random.choice(digits) for _ in range(3))
-    return random_cvv                                                   # hash the cvv. need to be stored somewhere to retrieve
+    hashed_cvv = hash_cvv(random_cvv)
+    return hashed_cvv                                                   # hash the cvv. need to be stored somewhere to retrieve
+
+
+def hash_cvv(random_cvv):
+    hashed_cvv = sha1(random_cvv.encode("utf-8")).hexdigest()
+    return hashed_cvv
 
 
 def get_user_fullname(current_user, db: Session):
