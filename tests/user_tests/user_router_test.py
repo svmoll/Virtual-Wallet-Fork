@@ -8,7 +8,7 @@ from unittest.mock import patch, Mock, MagicMock, create_autospec
 from fastapi.testclient import TestClient
 from app.main import app
 from app.api.auth_service.auth import authenticate_user
-from app.api.routes.users.router import register_user, login, update, search, add_contact
+from app.api.routes.users.router import register_user, login, update, search, add_contact, delete_contact
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
 
 client = TestClient(app)
@@ -265,3 +265,33 @@ class UserRouter_Should(unittest.TestCase):
         # Assert
         with self.assertRaises(HTTPException) as context:
             add_contact(fake_user_view( ), None, db)
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.delete_contact")
+    def test_deleteContact_successfullyRemovesTheContact(self, mock_delete, mock_get_db, mock_get_user):
+        # Arrange
+        mock_delete.return_value = True
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Act
+        response = delete_contact(fake_user_view(), "tester", db)
+
+
+        # Assert
+        self.assertEqual(204, response.status_code)
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    def test_deleteContact_returnsCorrectStatusCodeWhenSuccessful(self,mock_get_db, mock_get_user):
+        # Arrange
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            delete_contact(fake_user_view( ), None, db)

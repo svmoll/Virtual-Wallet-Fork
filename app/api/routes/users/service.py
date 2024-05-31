@@ -142,3 +142,14 @@ def create_contact(contact_username: str, user_username: str, db: Session = Depe
     except IntegrityError:
         db.rollback( )
         raise HTTPException(status_code=400, detail="Unable to add contact")
+
+def delete_contact(contact_username: str, user_username: str, db: Session = Depends(get_db) ):
+    existing_contact = db.query(Contact).filter(
+        (Contact.user_username == user_username) & (Contact.contact_username == contact_username)
+    ).first()
+
+    if existing_contact:
+        db.delete(existing_contact)
+        return {"success": True}
+    else:
+        raise HTTPException(status_code=404, detail="Contact does not exist")

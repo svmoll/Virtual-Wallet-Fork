@@ -104,3 +104,15 @@ def add_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_ra
         content={"detail":"Successfully added new contact"
         },
     )
+
+@user_router.delete("/contacts")
+def delete_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                   username: Optional[str] = Body(None, description="Username to delete"),
+                   db: Session = Depends(get_db)):
+
+    if username is None:
+        raise HTTPException(status_code=400, detail="Username should not be empty")
+
+    delete_success = service.delete_contact(username, current_user.username, db)
+    if delete_success:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
