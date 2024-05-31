@@ -110,6 +110,6 @@ def decline_transaction(
     transaction_id: int,
     db: Session = Depends(get_db),
 ):
-    decline_incoming_transaction(current_user.usernam, transaction_id, db)
+    decline_incoming_transaction(current_user.username, transaction_id, db)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
