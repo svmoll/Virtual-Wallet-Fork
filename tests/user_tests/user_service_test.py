@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
-from app.core.models import User
+from app.core.models import User, Contact
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
-from app.api.routes.users.service import create, update_user, get_user, search_user
+from app.api.routes.users.service import create, update_user, get_user, search_user, create_contact
 
 
 def fake_user_dto():
@@ -279,7 +279,7 @@ class UsrServices_Should(unittest.TestCase):
         # Assert
         self.assertEqual(result, fake_user)
 
-    def test_getUser_not_found(self):
+    def test_getUser_notFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -310,7 +310,7 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual("email@example.com", result.email)
 
     @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_usernameNotFound(self, mock_get_db):
+    def test_searchUser_usernameNotFoundRaisesHTTPException(self, mock_get_db):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -340,7 +340,7 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual("email@example.com", result.email)
 
     @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_emailNotFound(self, mock_get_db):
+    def test_searchUser_emailNotFoundRaisesHTTPException(self, mock_get_db):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -371,7 +371,7 @@ class UsrServices_Should(unittest.TestCase):
 
 
     @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_phoneNumberNotFound(self, mock_get_db):
+    def test_searchUser_phoneNumberNotFoundRaisesHTTPException(self, mock_get_db):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -382,3 +382,76 @@ class UsrServices_Should(unittest.TestCase):
         # Assert
         with self.assertRaises(HTTPException):
             search_user(phone_number="1234567890", db=db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_addsContactWhenSuccessful(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Contact).filter.return_value.first.return_value = None
+
+        #Act
+        result = create_contact("newcontact", "tester", db)
+
+        # Assert
+        self.assertEqual({"success": True}, result)
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_userNotFoundRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_contactAlreadyExistsRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(Contact).filter.return_value.first.return_value = True
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_raisesRaisesHTTPExceptionIfIntegrityError(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Contact).filter.return_value.first.return_value = None
+        db.commit = Mock(
+            side_effect=IntegrityError(Mock( ), Mock( ), "Some ntegrity error")
+        )
+        db.rollback = Mock()
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)

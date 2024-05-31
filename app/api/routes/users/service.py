@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.core.db_dependency import get_db
 from .schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
-from app.core.models import User, Account
+from app.core.models import User, Account, Contact
 from app.api.auth_service.auth import hash_pass
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Depends
@@ -120,3 +120,25 @@ def search_user(username: str = None, email: str = None, phone_number: str = Non
         if not user:
             raise HTTPException(status_code=404, detail="User with that phone number was not found")
         return UserFromSearchDTO(username=user.username, email=user.email)
+
+def create_contact(contact_username: str, user_username: str, db: Session = Depends(get_db) ):
+    user = db.query(User).filter_by(username=contact_username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User with that username was not found")
+
+    existing_contact = db.query(Contact).filter(
+        (Contact.user_username == user_username) & (Contact.contact_username == contact_username)
+    ).first( )
+
+    if existing_contact:
+        raise HTTPException(status_code=404, detail="Contact already exists")
+
+    new_contact = Contact(user_username=user_username, contact_username=contact_username)
+    db.add(new_contact)
+
+    try:
+        db.commit( )
+        return {"success": True}
+    except IntegrityError:
+        db.rollback( )
+        raise HTTPException(status_code=400, detail="Unable to add contact")

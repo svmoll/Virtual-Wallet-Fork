@@ -8,7 +8,7 @@ from unittest.mock import patch, Mock, MagicMock, create_autospec
 from fastapi.testclient import TestClient
 from app.main import app
 from app.api.auth_service.auth import authenticate_user
-from app.api.routes.users.router import register_user, login, update, search
+from app.api.routes.users.router import register_user, login, update, search, add_contact
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
 
 client = TestClient(app)
@@ -174,7 +174,7 @@ class UserRouter_Should(unittest.TestCase):
 
         # Act
         response = search(fake_user_view(), "testuser", db)
-        response_body = json.loads(response.body.decode('utf-8'))
+        response_body = json.loads(response.body.decode("utf-8"))
 
         # Assert
         self.assertEqual(200, response.status_code)
@@ -193,7 +193,7 @@ class UserRouter_Should(unittest.TestCase):
 
         # Act
         response = search(fake_user_view(), None, "test@example.com", db)
-        response_body = json.loads(response.body.decode('utf-8'))
+        response_body = json.loads(response.body.decode("utf-8"))
 
         # Assert
         self.assertEqual(200, response.status_code)
@@ -212,7 +212,7 @@ class UserRouter_Should(unittest.TestCase):
 
         # Act
         response = search(fake_user_view(), None, None,"1234567890", db)
-        response_body = json.loads(response.body.decode('utf-8'))
+        response_body = json.loads(response.body.decode("utf-8"))
 
         # Assert
         self.assertEqual(200, response.status_code)
@@ -222,7 +222,7 @@ class UserRouter_Should(unittest.TestCase):
     @patch("app.api.auth_service.auth.get_user_or_raise_401")
     @patch("app.core.db_dependency.get_db")
     @patch("app.api.routes.users.service.search_user")
-    def test_search_RaisesBadRequestWhenNoQueryParamsAreAdded(self, mock_search_user, mock_get_db, mock_get_user):
+    def test_search_raisesBadRequestWhenNoQueryParamsAreAdded(self, mock_search_user, mock_get_db, mock_get_user):
         # Arrange
         mock_search_user.return_value = fake_user()
         mock_get_user.return_value = fake_user_view()
@@ -232,3 +232,36 @@ class UserRouter_Should(unittest.TestCase):
         # Assert
         with self.assertRaises(HTTPException) as context:
             search(fake_user_view( ), None, None, None, db)
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.create_contact")
+    def test_create_successfulAndReturnsCorrectStatusCode(self, mock_create_contact, mock_get_db, mock_get_user):
+        # Arrange
+        mock_create_contact.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Act
+        response = add_contact(fake_user_view(), "tester", db)
+        response_body = json.loads(response.body.decode("utf-8"))
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"detail": "Successfully added new contact"}, response_body)
+        mock_create_contact.assert_called_once()
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.create_contact")
+    def test_create_raisesBadRequestWhenBodyIsEmpty(self, mock_create_contact, mock_get_db, mock_get_user):
+        # Arrange
+        mock_create_contact.return_value = fake_user()
+        mock_get_user.return_value = fake_user_view()
+        mock_get_db.return_value = fake_db()
+        db = fake_db()
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            add_contact(fake_user_view( ), None, db)

@@ -1,6 +1,6 @@
 from datetime import timedelta
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from . import service
@@ -85,6 +85,22 @@ def search(
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={f"username": user.username, "email": user.email,
+        content={"username": user.username, "email": user.email,
+        },
+    )
+
+@user_router.post("/contacts")
+def add_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                username: Optional[str] = Body(None, description="Username to add"),
+                db: Session = Depends(get_db)):
+
+    if username is None:
+        raise HTTPException(status_code=400, detail="Username should not be empty")
+
+    create_contact = service.create_contact(username, current_user.username, db)
+    if create_contact:
+        return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"detail":"Successfully added new contact"
         },
     )
