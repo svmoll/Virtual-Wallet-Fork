@@ -1,8 +1,13 @@
+from datetime import datetime
+import pytz
+from decimal import Decimal
 from .schemas import TransactionDTO
+from ...utils.responses import DatabaseError, InsufficientFundsError
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
-from app.core.models import Transaction
+from app.core.models import Account, Transaction
+from ..accounts.service import get_account_by_username
 from app.core.db_dependency import get_db
 
 
@@ -36,25 +41,8 @@ def create_draft_transaction(
             raise HTTPException(
                 status_code=400, detail="Category doesn't exist!"
             ) from e
-
-
-def get_draft_transaction_by_id(
-    transaction_id: int, sender_account: str, db: Session = Depends(get_db)
-) -> Transaction:
-    transaction_draft = (
-        db.query(Transaction)
-        .filter(
-            Transaction.id == transaction_id,
-            Transaction.sender_account == sender_account,
-            Transaction.status == "draft",
-        )
-        .first()
-    )
-
-    if not transaction_draft:
-        raise HTTPException(status_code=404, detail="Transaction draft not found!")
-
-    return transaction_draft
+        else:
+            raise HTTPException(status_code=400, detail="Database error occurred!")
 
 
 def update_draft_transaction(
@@ -88,13 +76,33 @@ def update_draft_transaction(
 
 
 def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
-    transaction_draft = get_draft_transaction_by_id(transaction_id, sender_account, db)
 
-    transaction_draft.status = "pending"
-    db.commit()
-    db.refresh(transaction_draft)
+    try:
+        transaction_draft = get_draft_transaction_by_id(
+            transaction_id, sender_account, db
+        )
+        account = get_account_by_username(sender_account, db)
 
-    return transaction_draft
+        if account.balance < transaction_draft.amount:
+            raise InsufficientFundsError()
+
+        transaction_draft.status = "pending"
+        account.balance -= transaction_draft.amount
+
+        db.commit()
+        db.refresh(transaction_draft)
+
+        return transaction_draft
+
+    except InsufficientFundsError:
+        raise HTTPException(status_code=400, detail="Insufficient funds")
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Database error occurred!")
+
+    except Exception:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
 def delete_draft(sender_account: str, transaction_id: int, db: Session):
@@ -104,4 +112,78 @@ def delete_draft(sender_account: str, transaction_id: int, db: Session):
     db.commit()
 
 
-# get transactions goes here - use hybrid property ?
+def accept_incoming_transaction(
+    receiver_account: str, transaction_id: int, db: Session
+):
+    incoming_transaction = get_incoming_transaction_by_id(
+        receiver_account, transaction_id, db
+    )
+    account = get_account_by_username(receiver_account, db)
+
+    account.balance = account.balance + incoming_transaction.amount
+
+    incoming_transaction.status = "completed"
+    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+
+    try:
+        db.commit()
+        db.refresh(account)
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError("Database operation failed") from e
+
+    return account.balance
+
+
+def decline_incoming_transaction(
+    receiver_account: str, transaction_id: int, db: Session
+):
+    incoming_transaction = get_incoming_transaction_by_id(
+        receiver_account, transaction_id, db
+    )
+    sender_account = get_account_by_username(incoming_transaction.sender_account, db)
+
+    sender_account.balance += incoming_transaction.amount
+    incoming_transaction.status = "declined"
+    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+
+    db.commit()
+
+
+# Helper Functions
+def get_draft_transaction_by_id(
+    transaction_id: int, sender_account: str, db: Session = Depends(get_db)
+) -> Transaction:
+    transaction_draft = (
+        db.query(Transaction)
+        .filter(
+            Transaction.id == transaction_id,
+            Transaction.sender_account == sender_account,
+            Transaction.status == "draft",
+        )
+        .first()
+    )
+
+    if not transaction_draft:
+        raise HTTPException(status_code=404, detail="Transaction draft not found!")
+
+    return transaction_draft
+
+
+def get_incoming_transaction_by_id(
+    receiver_account: str, transaction_id: int, db: Session = Depends(get_db)
+) -> Transaction:
+    incoming_transaction = (
+        db.query(Transaction)
+        .filter(
+            Transaction.id == transaction_id,
+            Transaction.receiver_account == receiver_account,
+            Transaction.status == "pending",
+        )
+        .first()
+    )
+
+    if not incoming_transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found!")
+
+    return incoming_transaction

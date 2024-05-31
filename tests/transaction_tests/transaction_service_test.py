@@ -1,13 +1,18 @@
 import unittest
 from unittest.mock import patch, Mock, MagicMock
-from fastapi.responses import JSONResponse
+from datetime import datetime
+import pytz
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
-from app.core.models import Transaction
+from decimal import Decimal
+from app.api.utils.responses import InsufficientFundsError
+from app.core.models import Account, Transaction
 from app.api.routes.transactions.schemas import TransactionDTO
 from app.api.routes.transactions.service import (
+    accept_incoming_transaction,
     create_draft_transaction,
+    decline_incoming_transaction,
     delete_draft,
     update_draft_transaction,
     get_draft_transaction_by_id,
@@ -41,11 +46,30 @@ def fake_transaction_draft():
         category_id=1,
         description="test_description",
         status="draft",
-        is_recurring=False,
         is_flagged=False,
     )
     transaction.id = 1
     return transaction
+
+
+def fake_incoming_transaction():
+    transaction = Transaction(
+        sender_account=TEST_SENDER_ACCOUNT,
+        receiver_account="test_receiver",
+        amount=11.30,
+        category_id=1,
+        description="test_description",
+        status="pending",
+        is_flagged=False,
+    )
+    transaction.id = 1
+    return transaction
+
+
+def fake_account():
+    account = Account(username="test_username", balance=22, is_blocked=False)
+    account.id = 1
+    return account
 
 
 Session = sessionmaker()
@@ -76,20 +100,23 @@ class TransactionsServiceShould(unittest.TestCase):
         # Act
         result = create_draft_transaction(sender_account, transaction, db)
 
+        expected_transaction = Transaction(
+            sender_account="test_sender",
+            receiver_account="test_receiver",
+            amount=Decimal("11.3"),
+            category_id=1,
+            description="test_description",
+            transaction_date=None,
+            status="draft",
+            is_flagged=False,
+        )
+
         # Assert
         db.add.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertIsInstance(result, Transaction)
-        self.assertEqual(result.sender_account, "test_sender")
-        self.assertEqual(result.receiver_account, "test_receiver")
-        self.assertEqual(result.amount, 11.30)
-        self.assertEqual(result.category_id, 1)
-        self.assertEqual(result.description, "test_description")
-        self.assertEqual(result.transaction_date, None)
-        self.assertEqual(result.status, "draft")
-        self.assertEqual(result.is_recurring, False)
-        self.assertEqual(result.is_flagged, False)
+        self.assertEqual(expected_transaction, result)
 
     def test_createDraftTransaction_raisesHTTPExceptionForNonExistentReceiver(self):
         # Arrange
@@ -144,7 +171,7 @@ class TransactionsServiceShould(unittest.TestCase):
         # Assert
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
-        self.assertEqual(result.amount, 101.40)
+        self.assertEqual(result.amount, Decimal("101.40"))
         self.assertEqual(result.receiver_account, "updated_receiver")
         self.assertEqual(result.category_id, 2)
         self.assertEqual(result.description, "updated_description")
@@ -187,17 +214,20 @@ class TransactionsServiceShould(unittest.TestCase):
         db.query.return_value.filter.assert_called_once()
         db.query.return_value.filter.return_value.first.assert_called_once()
 
+    @patch("app.api.routes.transactions.service.get_account_by_username")
     @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_confirmDraftTransaction_returnsTransactionWithPendingStatus(
-        self, get_transaction_mock
+        self, get_transaction_mock, get_account_mock
     ):
         # Arrange
         sender_account = TEST_SENDER_ACCOUNT
         transaction_id = 1
+        account = fake_account()
         db = fake_db()
         db.commit = Mock()
         db.refresh = Mock()
         get_transaction_mock.return_value = fake_transaction_draft()
+        get_account_mock.return_value = account
 
         # Act
         result = confirm_draft_transaction(sender_account, transaction_id, db)
@@ -206,6 +236,29 @@ class TransactionsServiceShould(unittest.TestCase):
         db.commit.assert_called_once()
         db.refresh.assert_called_once()
         self.assertEqual(result.status, "pending")
+        self.assertEqual(account.balance, 10.70)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
+    def test_confirmDraftTransaction_raisesErrorWhenInsufficientFunds(
+        self, get_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        sender_account = TEST_SENDER_ACCOUNT
+        transaction_id = 1
+        account = fake_account()
+        account.balance = 11
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_transaction_mock.return_value = fake_transaction_draft()
+        get_account_mock.return_value = account
+
+        # Act & Assert
+        with self.assertRaises((HTTPException)) as context:
+            confirm_draft_transaction(sender_account, transaction_id, db)
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertEqual(context.exception.detail, "Insufficient funds")
 
     @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_DeleteDraft_returnsNoneWhenSuccessful(self, get_transaction_mock):
@@ -225,6 +278,91 @@ class TransactionsServiceShould(unittest.TestCase):
         db.delete.assert_called_once_with(transaction)
         db.commit.assert_called_once()
         self.assertIsNone(result)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
+    @patch("app.api.routes.transactions.service.datetime")
+    def test_acceptIncomingTransaction_returnsBalanceAndChangesStatusWhenSuccessful(
+        self, datetime_mock, get_incoming_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        receiver_account = "test_receiver"
+        transaction_id = 1
+        account = fake_account()
+        transaction = fake_incoming_transaction()
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_account_mock.return_value = account
+        get_incoming_transaction_mock.return_value = transaction
+        fixed_datetime = datetime(2024, 5, 31, 12, 0, 0, tzinfo=pytz.utc)
+        datetime_mock.now.return_value = fixed_datetime
+
+        # Act
+        result = accept_incoming_transaction(receiver_account, transaction_id, db)
+
+        # Act
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
+        self.assertEqual(result, 33.30)
+        self.assertEqual(transaction.status, "completed")
+        self.assertTrue(transaction.transaction_date.tzinfo is not None)
+        self.assertEqual(transaction.transaction_date.tzinfo, pytz.utc)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
+    @patch("app.api.routes.transactions.service.datetime")
+    def test_declineIncomingTransaction_returnsNoneAndChangesStatusWhenSuccessful(
+        self, datetime_mock, get_incoming_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        receiver_account = "test_receiver"
+        transaction_id = 1
+        account = fake_account()
+        transaction = fake_incoming_transaction()
+        db = fake_db()
+        db.commit = Mock()
+        db.refresh = Mock()
+        get_account_mock.return_value = account
+        get_incoming_transaction_mock.return_value = transaction
+        fixed_datetime = datetime(2024, 5, 31, 12, 0, 0, tzinfo=pytz.utc)
+        datetime_mock.now.return_value = fixed_datetime
+
+        # Act
+        result = decline_incoming_transaction(receiver_account, transaction_id, db)
+
+        # Act
+        db.commit.assert_called_once()
+        self.assertEqual(result, None)
+        self.assertEqual(transaction.status, "declined")
+        self.assertTrue(transaction.transaction_date.tzinfo is not None)
+        self.assertEqual(transaction.transaction_date.tzinfo, pytz.utc)
+
+    @patch("app.api.routes.transactions.service.get_account_by_username")
+    @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
+    @patch("app.api.routes.transactions.service.datetime")
+    def test_declineIncomingTransaction_returnsAmountToSenderAndChangesStatusToDeclined(
+        self, datetime_mock, get_incoming_transaction_mock, get_account_mock
+    ):
+        # Arrange
+        receiver_account = "test_receiver"
+        transaction_id = 1
+        sender_account = fake_account()
+        transaction = fake_incoming_transaction()
+        db = fake_db()
+        db.commit = Mock()
+        get_account_mock.return_value = sender_account
+        get_incoming_transaction_mock.return_value = transaction
+        fixed_datetime = datetime(2024, 5, 31, 12, 0, 0, tzinfo=pytz.utc)
+        datetime_mock.now.return_value = fixed_datetime
+
+        # Act
+        result = decline_incoming_transaction(receiver_account, transaction_id, db)
+
+        # Assert
+        db.commit.assert_called_once()
+        self.assertEqual(transaction.status, "declined")
+        self.assertEqual(sender_account.balance, 33.30)
 
 
 if __name__ == "__main__":
