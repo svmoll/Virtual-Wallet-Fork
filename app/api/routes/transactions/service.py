@@ -76,23 +76,33 @@ def update_draft_transaction(
 
 
 def confirm_draft_transaction(sender_account: str, transaction_id: int, db: Session):
-    transaction_draft = get_draft_transaction_by_id(transaction_id, sender_account, db)
-    account = get_account_by_username(sender_account, db)
-
-    if account.balance < transaction_draft.amount:
-        raise InsufficientFundsError()
-
-    transaction_draft.status = "pending"
-    account.balance -= transaction_draft.amount
 
     try:
+        transaction_draft = get_draft_transaction_by_id(
+            transaction_id, sender_account, db
+        )
+        account = get_account_by_username(sender_account, db)
+
+        if account.balance < transaction_draft.amount:
+            raise InsufficientFundsError()
+
+        transaction_draft.status = "pending"
+        account.balance -= transaction_draft.amount
+
         db.commit()
         db.refresh(transaction_draft)
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise DatabaseError("Database operation failed") from e
 
-    return transaction_draft
+        return transaction_draft
+
+    except InsufficientFundsError:
+        raise HTTPException(status_code=400, detail="Insufficient funds")
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Database error occurred!")
+
+    except Exception:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
 def delete_draft(sender_account: str, transaction_id: int, db: Session):

@@ -255,10 +255,10 @@ class TransactionsServiceShould(unittest.TestCase):
         get_account_mock.return_value = account
 
         # Act & Assert
-        with self.assertRaises(InsufficientFundsError) as context:
+        with self.assertRaises((HTTPException)) as context:
             confirm_draft_transaction(sender_account, transaction_id, db)
         self.assertEqual(context.exception.status_code, 400)
-        self.assertEqual(context.exception.message, "Insufficient funds")
+        self.assertEqual(context.exception.detail, "Insufficient funds")
 
     @patch("app.api.routes.transactions.service.get_draft_transaction_by_id")
     def test_DeleteDraft_returnsNoneWhenSuccessful(self, get_transaction_mock):
