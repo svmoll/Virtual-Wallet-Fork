@@ -7,7 +7,6 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
-
 from app.core.db_dependency import get_db
 from app.core.models import User
 from app.api.routes.users.schemas import UserViewDTO
