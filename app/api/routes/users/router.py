@@ -1,6 +1,6 @@
 from datetime import timedelta
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from . import service
@@ -8,6 +8,7 @@ from app.core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from .schemas import UserDTO, UserViewDTO, UpdateUserDTO, UserShowDTO
 from ...auth_service import auth
+from fastapi.responses import JSONResponse, Response
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
@@ -69,3 +70,49 @@ def update(
     updated_user = service.update_user(current_user.id, update_info, db)
 
     return f"User {updated_user.username} updated profile successfully."
+
+@user_router.get("/search")
+def search(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    username: Optional[str] = Query(None, description="Find by username"),
+    email: Optional[str] = Query(None, description="Find by email"),
+    phone_number: Optional[str] = Query(None, description="Find by phone number"),
+    db: Session = Depends(get_db)
+):
+    if username is None and email is None and phone_number is None:
+        raise HTTPException(status_code=400, detail="Username or Email or Phone Number is required for search")
+    user = service.search_user(username, email, phone_number, db)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"username": user.username, "email": user.email,
+        },
+    )
+
+@user_router.post("/contacts")
+def add_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                username: Optional[str] = Body(None, description="Username to add"),
+                db: Session = Depends(get_db)):
+
+    if username is None:
+        raise HTTPException(status_code=400, detail="Username should not be empty")
+
+    create_contact = service.create_contact(username, current_user.username, db)
+    if create_contact:
+        return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"detail":"Successfully added new contact"
+        },
+    )
+
+@user_router.delete("/contacts")
+def delete_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                   username: Optional[str] = Body(None, description="Username to delete"),
+                   db: Session = Depends(get_db)):
+
+    if username is None:
+        raise HTTPException(status_code=400, detail="Username should not be empty")
+
+    delete_success = service.delete_contact(username, current_user.username, db)
+    if delete_success:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)

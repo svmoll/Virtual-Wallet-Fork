@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
-from app.core.models import User
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO
-from app.api.routes.users.service import create, update_user, get_user
+from app.core.models import User, Contact
+from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
+from app.api.routes.users.service import create, update_user, get_user, search_user, create_contact, delete_contact
 
 
 def fake_user_dto():
@@ -279,7 +279,7 @@ class UsrServices_Should(unittest.TestCase):
         # Assert
         self.assertEqual(result, fake_user)
 
-    def test_getUser_not_found(self):
+    def test_getUser_notFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -290,3 +290,208 @@ class UsrServices_Should(unittest.TestCase):
             get_user(1, db)
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "User not found")
+
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byUsername(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(username="tester", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_usernameNotFoundRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(username="tester", db=db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byEmail(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(email="email@example.com", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_emailNotFoundRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(email="email@example.com", db=db)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_byPhoneNumber(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = user
+
+        # Act
+        result = search_user(phone_number="1234567890", db=db)
+
+        # Assert
+        self.assertIsInstance(result, UserFromSearchDTO)
+        self.assertEqual("tester", result.username)
+        self.assertEqual("email@example.com", result.email)
+
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_searchUser_phoneNumberNotFoundRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter_by= Mock()
+        user = fake_user_dto()
+        db.query().filter_by().first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException):
+            search_user(phone_number="1234567890", db=db)
+
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_addsContactWhenSuccessful(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Contact).filter.return_value.first.return_value = None
+
+        #Act
+        result = create_contact("newcontact", "tester", db)
+
+        # Assert
+        self.assertEqual({"success": True}, result)
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_userNotFoundRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = None
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)
+        self.assertEqual(404, context.exception.status_code)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_contactAlreadyExistsRaisesHTTPException(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        db.commit = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(Contact).filter.return_value.first.return_value = True
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)
+        self.assertEqual(404, context.exception.status_code)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_create_raisesHTTPExceptionIfIntegrityError(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.add = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Contact).filter.return_value.first.return_value = None
+        db.commit = Mock(
+            side_effect=IntegrityError(Mock( ), Mock( ), "Some ntegrity error")
+        )
+        db.rollback = Mock()
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            create_contact("newcontact", "tester", db)
+        self.assertEqual(400, context.exception.status_code)
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_deleteContact_removesTheContact(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.delete = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query.return_value.filter.return_value.first.return_value = True
+
+        #Act
+        result = delete_contact("contact_username", "user_username", db)
+
+        # Assert
+        self.assertEqual({"success": True}, result)
+        db.delete.assert_called_once()
+
+    @patch("app.api.routes.users.service.get_db")
+    def test_deleteContact_raisesHTTPExceptionWhenContatcNotFound(self, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.delete = Mock()
+        user = fake_user_dto()
+        user.username = "newcontact"
+        db.query.return_value.filter.return_value.first.return_value = None
+
+
+        # Assert
+        with self.assertRaises(HTTPException) as context:
+            delete_contact("contact_username", "user_username", db)
+        self.assertEqual(404, context.exception.status_code)
+

@@ -104,3 +104,10 @@ class UserShowDTO(BaseModel):
     phone_number: str
     fullname: str
 
+class UserFromSearchDTO(BaseModel):
+    username: str
+    email: str
+
+class ContactDTO(BaseModel):
+    user_username: str
+    contact_username: str
