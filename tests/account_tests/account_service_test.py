@@ -4,7 +4,11 @@ from app.core.models import Account
 
 # from app.api.routes.accounts.schemas import AccountViewDTO
 from fastapi import HTTPException
-from app.api.routes.accounts.service import withdrawal_request, get_account_by_username
+from app.api.routes.accounts.service import (
+    add_money_to_account,
+    withdrawal_request,
+    get_account_by_username,
+)
 
 
 def fake_account():
@@ -156,6 +160,41 @@ class AccountService_Should(unittest.TestCase):
         db.query.assert_called_once_with(Account)
         db.query.return_value.filter.assert_called_once()
         db.query.return_value.filter.return_value.first.assert_called_once()
+
+    @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_addMoneyToAccount_returnsUpdatedBalance(self, mock_get_account):
+        # Arrange
+        username = "Grippen"
+        deposit = 100
+        db = fake_db()
+        account = fake_account()
+        mock_get_account.return_value = account
+
+        # Act
+        result = add_money_to_account(username, deposit, db)
+
+        # Assert
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(account)
+        self.assertEqual(result, 1334.56)
+
+    @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_addMoneyToAccount_returns403WhenAccountBlocked(self, mock_get_account):
+        # Arrange
+        username = "Grippen"
+        deposit = 100
+        db = fake_db()
+        db.commit
+        account = fake_account()
+        account.is_blocked = True
+        mock_get_account.return_value = account
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            add_money_to_account(username, deposit, db)
+
+        self.assertEqual(context.exception.status_code, 403)
+        self.assertEqual(context.exception.detail, "Account is blocked")
 
 
 if __name__ == "__main__":

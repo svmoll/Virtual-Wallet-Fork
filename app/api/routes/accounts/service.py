@@ -2,8 +2,12 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from ....core.db_dependency import get_db
 from ..users.schemas import UserViewDTO
+from ...utils.responses import AccountBlockedError
 from ....core.models import Account
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def withdrawal_request(
@@ -31,6 +35,29 @@ def withdrawal_request(
     db.commit()
 
     return account
+
+
+def add_money_to_account(username: str, deposit: Decimal, db: Session):
+    try:
+        account = get_account_by_username(username, db)
+
+        if account.is_blocked:
+            raise AccountBlockedError()
+
+        account.balance += deposit
+
+        db.commit()
+        db.refresh(account)
+
+        return account.balance
+
+    except AccountBlockedError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
+    except Exception as e:
+        # Handle unexpected errors
+        logging.error(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 # Helper Functions
