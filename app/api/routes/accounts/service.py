@@ -30,6 +30,7 @@ def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: S
         account.balance -= withdrawal_amount
 
         db.commit()
+        db.refresh(account)
 
         return account.balance
 

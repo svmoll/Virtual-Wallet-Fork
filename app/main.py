@@ -1,7 +1,10 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from app.api.routes.home.router import home_router
 from app.core.database import engine
+from app.core.db_dependency import get_db
 from app.core import models
+from app.core.db_population import initialize_special_accounts
 from app.api.routes.categories.router import category_router
 from app.api.routes.users.router import user_router
 from app.api.routes.transactions.router import transaction_router
@@ -26,7 +29,25 @@ logger = logging.getLogger(__name__)  # Create a logger for this module
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize special accounts during application startup
+    db_gen = get_db()
+    db = next(db_gen)
+    try:
+        initialize_special_accounts(db)
+    finally:
+        db_gen.close()
+
+    yield  # Control is passed to the application
+
+    # Shutdown logic if needed
+    # No specific shutdown logic in this case
+
+
+# Initialize the FastAPI app with lifespan
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(category_router)
 app.include_router(user_router)

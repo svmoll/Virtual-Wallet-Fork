@@ -30,6 +30,45 @@ def fake_user():
 class AccountService_Should(unittest.TestCase):
 
     @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_withdrawMoneyFromAccount_returnsCorrectBalance(self, mock_get_account):
+        # Arrange
+        username = "Grippen"
+        withdrawal_amount = 100
+        db = fake_db()
+        account = fake_account()
+        mock_get_account.return_value = account
+
+        # Act
+        result = withdraw_money_from_account(username, withdrawal_amount, db)
+
+        # Assert
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(account)
+        self.assertEqual(result, 1134.56)
+
+    @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_withdrawMoneyFromAccount_raises403WhenAccountBlocked(
+        self, mock_get_account
+    ):
+        # Arrange
+        username = "Grippen"
+        withdrawal_amount = 111
+        db = fake_db()
+        account = fake_account()
+        account.is_blocked = True
+        mock_get_account.return_value = account
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            withdraw_money_from_account(username, withdrawal_amount, db)
+
+        self.assertEqual(context.exception.status_code, 403)
+        self.assertEqual(
+            context.exception.detail,
+            f"Account is blocked",
+        )
+
+    @patch("app.api.routes.accounts.service.get_account_by_username")
     def test_withdrawMoneyFromAccount_raises400WhenInsufficientFunds(
         self, mock_get_account
     ):
@@ -39,7 +78,7 @@ class AccountService_Should(unittest.TestCase):
         db = fake_db()
         mock_get_account.return_value = fake_account()
 
-        # Act
+        # Act & Assert
         with self.assertRaises(HTTPException) as context:
             withdraw_money_from_account(username, withdrawal_amount, db)
 
@@ -49,76 +88,25 @@ class AccountService_Should(unittest.TestCase):
             f"Insufficient funds",
         )
 
-    @patch("app.api.routes.accounts.service.get_account_by_id")
-    def test_accountWithdrawal_raisesBadRequest_WhenTheAccountIsBlocked(
-        self, mock_get_account_by_id
+    @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_withdrawMoneyFromAccount_raises400WhenAmountBelowOrZero(
+        self, mock_get_account
     ):
-
         # Arrange
-        mock_get_db = fake_db()
-        mock_current_user = fake_user()
+        username = "Grippen"
+        withdrawal_amount = 0
+        db = fake_db()
+        mock_get_account.return_value = fake_account()
 
-        mock_account = fake_account()
-        mock_account.balance = 100.00
-        mock_account.is_blocked = True
-        mock_get_account_by_id.return_value = mock_account
-
-        withdrawal_amount = 50.00
-
-        # Act
+        # Act & Assert
         with self.assertRaises(HTTPException) as context:
-            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
+            withdraw_money_from_account(username, withdrawal_amount, db)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(
-            context.exception.detail, f"Account is blocked. Contact Customer Support."
+            context.exception.detail,
+            f"Amount must be more than 0.",
         )
-
-    @patch("app.api.routes.accounts.service.get_account_by_id")
-    def test_accountWithdrtest_accountWithdrawal_raisesBadRequest_WhenTheWithdrawalAmountIsNegative(
-        self, mock_get_account_by_id
-    ):
-
-        # Arrange
-        mock_get_db = fake_db()
-        mock_current_user = fake_user()
-
-        mock_account = fake_account()
-        mock_get_account_by_id.return_value = mock_account
-
-        withdrawal_amount = -50.00
-
-        # Act
-        with self.assertRaises(HTTPException) as context:
-            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
-
-        self.assertEqual(context.exception.status_code, 400)
-        self.assertEqual(
-            context.exception.detail, f"Withdrawals should be a positive number."
-        )
-
-    # Fix below
-    @patch("app.api.routes.accounts.service.get_account_by_id")
-    def test_accountWithdrawal_returnCorrectBalance_WhenTheWithdrawalIsSuccessful(
-        self, mock_get_account_by_id
-    ):
-
-        # Arrange
-        withdrawal_amount = 50
-        mock_get_db = fake_db()
-
-        mock_account = fake_account()
-        mock_account.balance = 100
-        mock_get_account_by_id.return_value = mock_account
-
-        expected_balance = mock_account.balance - withdrawal_amount
-
-        # Act
-        result = withdrawal_request(withdrawal_amount, mock_account, mock_get_db)
-        actual_account_balance = result.balance
-
-        # Assert
-        self.assertEqual(actual_account_balance, expected_balance)
 
     @patch("app.core.db_dependency.get_db")
     def test_getAccountByUsername_returnsAccountWhenExists(self, mock_get_db):
