@@ -45,7 +45,7 @@ class AccountService_Should(unittest.TestCase):
         db.add.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once_with(account)
-        self.assertEqual(result, 1134.56)
+        self.assertEqual(result, "1134.56")
 
     @patch("app.api.routes.accounts.service.get_account_by_username")
     def test_withdrawMoneyFromAccount_raises403WhenAccountBlocked(

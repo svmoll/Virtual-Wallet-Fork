@@ -1,7 +1,8 @@
 import unittest
+from fastapi import status
 from unittest.mock import patch, Mock
 from app.core.models import Account
-from app.api.routes.accounts.router import create_withdrawal
+from app.api.routes.accounts.router import deposit_money, withdraw_money
 from fastapi.responses import JSONResponse
 import json
 
@@ -20,35 +21,46 @@ def fake_user():
 
 class AccountRouter_Should(unittest.TestCase):
 
-    @patch("app.api.routes.accounts.service.get_account_by_id")
-    def test_accountWithdrawal_returnsCorrectStatusCode_WhenSuccessful(
+    @patch("app.api.routes.accounts.router.withdraw_money_from_account")
+    def test_withdrawMoney_returnsCorrectStatusCodeAndMessageWithUpdatedBalance(
         self,
-        mock_get_account_by_id,
+        mock_withdraw_money_from_account,
     ):
 
         # Arrange
-        mock_get_db = fake_db()
-        mock_current_user = fake_user()
-
-        mock_account = fake_account()
-        mock_account.balance = 100.00
-        mock_account.is_blocked = False
-        mock_get_account_by_id.return_value = mock_account
-
-        withdrawal_amount = 10.00
+        user = fake_user()
+        db = fake_db()
+        withdrawal_amount = 11.70
+        mock_withdraw_money_from_account.return_value = "50.30"
 
         # Act
-        response = create_withdrawal(mock_current_user, mock_get_db, withdrawal_amount)
+        response = withdraw_money(user, withdrawal_amount, db)
 
         # Assert
         self.assertIsInstance(response, JSONResponse)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        expected_content = {"message": "Your current balance is 50.30"}
+        response_content = json.loads(response.body.decode())
+        self.assertEqual(response_content, expected_content)
 
-        response_body = response.body.decode("utf-8")
-        response_body_dict = json.loads(response_body)
-        self.assertEqual(
-            response_body_dict,
-            {
-                "message": f"The withdrawal of {withdrawal_amount} leva has been being processed."
-            },
-        )
+    @patch("app.api.routes.accounts.router.add_money_to_account")
+    def test_AddMoney_returnsCorrectStatusCodeAndMessageWithUpdatedBalance(
+        self,
+        mock_add_money_to_account,
+    ):
+
+        # Arrange
+        user = fake_user()
+        db = fake_db()
+        withdrawal_amount = 11.70
+        mock_add_money_to_account.return_value = "11.20"
+
+        # Act
+        response = deposit_money(user, withdrawal_amount, db)
+
+        # Assert
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        expected_content = {"message": "Your current balance is 11.20"}
+        response_content = json.loads(response.body.decode())
+        self.assertEqual(response_content, expected_content)

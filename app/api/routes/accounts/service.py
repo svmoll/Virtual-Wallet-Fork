@@ -41,7 +41,9 @@ def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: S
         db.commit()
         db.refresh(account)
 
-        return account.balance
+        formatted_balance = f"{account.balance:.2f}"
+
+        return formatted_balance
 
     except AccountBlockedError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
