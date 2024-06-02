@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
-from app.core.models import Account
+from app.core.models import Account, Withdrawal
 
 # from app.api.routes.accounts.schemas import AccountViewDTO
 from fastapi import HTTPException
@@ -42,6 +42,7 @@ class AccountService_Should(unittest.TestCase):
         result = withdraw_money_from_account(username, withdrawal_amount, db)
 
         # Assert
+        db.add.assert_called_once()
         db.commit.assert_called_once()
         db.refresh.assert_called_once_with(account)
         self.assertEqual(result, 1134.56)
@@ -148,13 +149,13 @@ class AccountService_Should(unittest.TestCase):
     def test_addMoneyToAccount_returnsUpdatedBalance(self, mock_get_account):
         # Arrange
         username = "Grippen"
-        deposit = 100
+        deposit_amount = 100
         db = fake_db()
         account = fake_account()
         mock_get_account.return_value = account
 
         # Act
-        result = add_money_to_account(username, deposit, db)
+        result = add_money_to_account(username, deposit_amount, db)
 
         # Assert
         db.commit.assert_called_once()

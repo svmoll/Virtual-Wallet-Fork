@@ -7,9 +7,11 @@ from ...utils.responses import (
     InsufficientFundsError,
     InvalidAmountError,
 )
-from ....core.models import Account
+from ....core.models import Account, Withdrawal, Deposit
 from decimal import Decimal
+from datetime import datetime
 import logging
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,13 @@ def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: S
 
         if account.balance < withdrawal_amount:
             raise InsufficientFundsError()
+
+        withdrawal = Withdrawal(
+            sender_account=username,
+            amount=withdrawal_amount,
+            transaction_date=datetime.now(pytz.utc),
+        )
+        db.add(withdrawal)
 
         account.balance -= withdrawal_amount
 
@@ -46,14 +55,21 @@ def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: S
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
-def add_money_to_account(username: str, deposit: Decimal, db: Session):
+def add_money_to_account(username: str, deposit_amount: Decimal, db: Session):
     try:
         account = get_account_by_username(username, db)
 
         if account.is_blocked:
             raise AccountBlockedError()
 
-        account.balance += deposit
+        account.balance += deposit_amount
+
+        deposit = Deposit(
+            sender_account=username,
+            amount=deposit_amount,
+            transaction_date=datetime.now(pytz.utc),
+        )
+        db.add(deposit)
 
         db.commit()
         db.refresh(account)
@@ -70,12 +86,6 @@ def add_money_to_account(username: str, deposit: Decimal, db: Session):
 
 
 # Helper Functions
-# find account by id(current_user) test
-def get_account_by_id(current_user: UserViewDTO, db: Session):
-    account = db.query(Account).filter_by(username=current_user.username).first()
-    return account
-
-
 def get_account_by_username(username: str, db: Session = Depends(get_db)):
     account = db.query(Account).filter(username == username).first()
 
