@@ -6,7 +6,7 @@ from app.core.models import Account
 from fastapi import HTTPException
 from app.api.routes.accounts.service import (
     add_money_to_account,
-    withdrawal_request,
+    withdraw_money_from_account,
     get_account_by_username,
 )
 
@@ -29,29 +29,24 @@ def fake_user():
 
 class AccountService_Should(unittest.TestCase):
 
-    @patch("app.api.routes.accounts.service.get_account_by_id")
-    def test_accountWithdrawal_raisesBadREquest_WhenAccountHasLessThanTheWithdrawalAmount(
-        self, mock_get_account_by_id
+    @patch("app.api.routes.accounts.service.get_account_by_username")
+    def test_withdrawMoneyFromAccount_raises400WhenInsufficientFunds(
+        self, mock_get_account
     ):
-
         # Arrange
-        mock_get_db = fake_db()
-        mock_current_user = fake_user()
-
-        mock_account = fake_account()
-        mock_account.balance = 50.00  # Mock account balance
-        mock_get_account_by_id.return_value = mock_account
-
-        withdrawal_amount = 100
+        username = "Grippen"
+        withdrawal_amount = 2000
+        db = fake_db()
+        mock_get_account.return_value = fake_account()
 
         # Act
         with self.assertRaises(HTTPException) as context:
-            withdrawal_request(withdrawal_amount, mock_current_user, mock_get_db)
+            withdraw_money_from_account(username, withdrawal_amount, db)
 
         self.assertEqual(context.exception.status_code, 400)
         self.assertEqual(
             context.exception.detail,
-            f"Insufficient amount to withdraw {withdrawal_amount} leva.",
+            f"Insufficient funds",
         )
 
     @patch("app.api.routes.accounts.service.get_account_by_id")

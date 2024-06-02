@@ -52,3 +52,10 @@ class AccountBlockedError(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+
+
+class InvalidAmountError(Exception):
+    def __init__(self, message="Amount must be more than 0.", status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)

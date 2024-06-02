@@ -2,7 +2,11 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from ....core.db_dependency import get_db
 from ..users.schemas import UserViewDTO
-from ...utils.responses import AccountBlockedError
+from ...utils.responses import (
+    AccountBlockedError,
+    InsufficientFundsError,
+    InvalidAmountError,
+)
 from ....core.models import Account
 from decimal import Decimal
 import logging
@@ -10,31 +14,35 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def withdrawal_request(
-    withdrawal_amount: Decimal, current_user: UserViewDTO, db: Session = Depends(get_db)
-):
+def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: Session):
+    try:
+        account = get_account_by_username(username, db)
 
-    account = get_account_by_id(current_user, db)
+        if account.is_blocked:
+            raise AccountBlockedError()
 
-    if account.is_blocked == True:
-        raise HTTPException(
-            status_code=400, detail=f"Account is blocked. Contact Customer Support."
-        )
-    if withdrawal_amount <= 0:
-        raise HTTPException(
-            status_code=400, detail=f"Withdrawals should be a positive number."
-        )
-    if withdrawal_amount > account.balance:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Insufficient amount to withdraw {withdrawal_amount} leva.",
-        )
+        if withdrawal_amount <= 0:
+            raise InvalidAmountError()
 
-    account.balance -= withdrawal_amount
+        if account.balance < withdrawal_amount:
+            raise InsufficientFundsError()
 
-    db.commit()
+        account.balance -= withdrawal_amount
 
-    return account
+        db.commit()
+
+        return account.balance
+
+    except AccountBlockedError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except InvalidAmountError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except InsufficientFundsError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        # Handle unexpected errors
+        logging.error(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
 
 def add_money_to_account(username: str, deposit: Decimal, db: Session):
