@@ -88,7 +88,9 @@ class Account(Base):
     )
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    accounts_cards = relationship("Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts")
+    accounts_cards = relationship(
+        "Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts"
+    )
 
     sent_transactions = relationship(
         "Transaction",
@@ -232,6 +234,36 @@ class RecurringTransaction(BaseTransaction):
         self.transaction_date = transaction_date
         self.status = status
         self.recurring_interval = recurring_interval
+        self.is_flagged = is_flagged
+        if id is not None:
+            self.id = id  # for testing purposes, needs to be resolved
+
+
+@dataclass
+class Withdrawal(BaseTransaction):
+    __mapper_args__ = {
+        "polymorphic_identity": "withdrawal",
+    }
+
+    def __init__(
+        self,
+        sender_account,
+        amount,
+        receiver_account="cash_withdrawal",
+        category_id=None,
+        description=None,
+        transaction_date=None,
+        status="completed",
+        is_flagged=False,
+        id=None,  # for testing purposes; needs to be resolved
+    ):
+        self.sender_account = sender_account
+        self.receiver_account = receiver_account
+        self.amount = amount  # Decimal(f"{amount:.2f}")
+        self.category_id = category_id
+        self.description = description
+        self.transaction_date = transaction_date
+        self.status = status
         self.is_flagged = is_flagged
         if id is not None:
             self.id = id  # for testing purposes, needs to be resolved
