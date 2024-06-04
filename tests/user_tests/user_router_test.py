@@ -8,7 +8,7 @@ from unittest.mock import patch, Mock, MagicMock, create_autospec
 from fastapi.testclient import TestClient
 from app.main import app
 from app.api.auth_service.auth import authenticate_user
-from app.api.routes.users.router import register_user, login, update, search, add_contact, delete_contact
+from app.api.routes.users.router import register_user, login, update, search, add_contact, delete_contact, view_contacts
 from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserViewDTO
 
 client = TestClient(app)
@@ -295,3 +295,39 @@ class UserRouter_Should(unittest.TestCase):
         # Assert
         with self.assertRaises(HTTPException) as context:
             delete_contact(fake_user_view( ), None, db)
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.view")
+    def test_viewContacts_returnsMessageWhenNoContacts(self, mock_view, mock_get_db, mock_get_user):
+        # Arrange
+        mock_get_user.return_value = fake_user_view( )
+        mock_get_db.return_value = fake_db( )
+        db = fake_db( )
+        mock_view.return_value = []
+
+        # Act
+        response = view_contacts(fake_user_view(), db=db)
+        response_body = json.loads(response.body.decode("utf-8"))
+
+        # Assert
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"detail": "No contacts found"}, response_body)
+        mock_view.assert_called_once()
+
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.users.service.view")
+    def test_viewContacts_returnsMessageWhenNoContacts(self, mock_view, mock_get_db, mock_get_user):
+        # Arrange
+        mock_get_user.return_value = fake_user_view( )
+        mock_get_db.return_value = fake_db( )
+        db = fake_db( )
+        mock_view.return_value = ["contact1", "contact2"]
+
+        # Act
+        response = view_contacts(fake_user_view(), db=db)
+
+        # Assert
+        self.assertEqual(["contact1", "contact2"], response)
+        mock_view.assert_called_once()

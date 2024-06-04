@@ -116,3 +116,19 @@ def delete_contact(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or
     delete_success = service.delete_contact(username, current_user.username, db)
     if delete_success:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@user_router.get("/view/contacts")
+def view_contacts(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                  page: Optional[int] = Query(None, description="Page Number"),
+                  limit: Optional[int] = Query(None, description="Limit on page"),
+                   db: Session = Depends(get_db)):
+
+    contacts = service.view(current_user.username, page, limit, db)
+    if len(contacts) < 1:
+        return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"detail":"No contacts found"
+        }
+    )
+    return contacts
+
