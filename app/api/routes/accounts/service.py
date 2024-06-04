@@ -89,7 +89,7 @@ def add_money_to_account(username: str, deposit_amount: Decimal, db: Session):
 
 # Helper Functions
 def get_account_by_username(username: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(username == username).first()
+    account = db.query(Account).filter(Account.username == username).first()
 
     if not account:
         raise HTTPException(status_code=404, detail="Account not found!")
