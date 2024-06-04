@@ -109,5 +109,8 @@ class UserFromSearchDTO(BaseModel):
     email: str
 
 class ContactDTO(BaseModel):
-    user_username: str
-    contact_username: str
+    username: str
+
+    @classmethod
+    def from_query_result(cls, username):
+        return cls(username=username)

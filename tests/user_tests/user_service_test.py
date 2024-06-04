@@ -6,8 +6,9 @@ from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
 
 from app.core.models import User, Contact
-from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
-from app.api.routes.users.service import create, update_user, get_user, search_user, create_contact, delete_contact
+from app.api.routes.users.schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO, ContactDTO
+from app.api.routes.users.service import create, update_user, get_user, search_user, create_contact, delete_contact, \
+    view
 
 
 def fake_user_dto():
@@ -292,8 +293,8 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual(context.exception.detail, "User not found")
 
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_byUsername(self, mock_get_db):
+
+    def test_searchUser_byUsername(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -309,8 +310,8 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual("tester", result.username)
         self.assertEqual("email@example.com", result.email)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_usernameNotFoundRaisesHTTPException(self, mock_get_db):
+
+    def test_searchUser_usernameNotFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -322,8 +323,8 @@ class UsrServices_Should(unittest.TestCase):
         with self.assertRaises(HTTPException):
             search_user(username="tester", db=db)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_byEmail(self, mock_get_db):
+
+    def test_searchUser_byEmail(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -339,8 +340,8 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual("tester", result.username)
         self.assertEqual("email@example.com", result.email)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_emailNotFoundRaisesHTTPException(self, mock_get_db):
+
+    def test_searchUser_emailNotFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -352,8 +353,8 @@ class UsrServices_Should(unittest.TestCase):
         with self.assertRaises(HTTPException):
             search_user(email="email@example.com", db=db)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_byPhoneNumber(self, mock_get_db):
+
+    def test_searchUser_byPhoneNumber(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -370,8 +371,8 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual("email@example.com", result.email)
 
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_searchUser_phoneNumberNotFoundRaisesHTTPException(self, mock_get_db):
+
+    def test_searchUser_phoneNumberNotFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db()
         db.query = Mock()
@@ -384,8 +385,8 @@ class UsrServices_Should(unittest.TestCase):
             search_user(phone_number="1234567890", db=db)
 
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_create_addsContactWhenSuccessful(self, mock_get_db):
+
+    def test_create_addsContactWhenSuccessful(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -405,8 +406,8 @@ class UsrServices_Should(unittest.TestCase):
         db.add.assert_called_once()
         db.commit.assert_called_once()
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_create_userNotFoundRaisesHTTPException(self, mock_get_db):
+
+    def test_create_userNotFoundRaisesHTTPException(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -422,8 +423,8 @@ class UsrServices_Should(unittest.TestCase):
             create_contact("newcontact", "tester", db)
         self.assertEqual(404, context.exception.status_code)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_create_contactAlreadyExistsRaisesHTTPException(self, mock_get_db):
+
+    def test_create_contactAlreadyExistsRaisesHTTPException(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -439,8 +440,8 @@ class UsrServices_Should(unittest.TestCase):
             create_contact("newcontact", "tester", db)
         self.assertEqual(404, context.exception.status_code)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_create_raisesHTTPExceptionIfIntegrityError(self, mock_get_db):
+
+    def test_create_raisesHTTPExceptionIfIntegrityError(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -460,8 +461,8 @@ class UsrServices_Should(unittest.TestCase):
             create_contact("newcontact", "tester", db)
         self.assertEqual(400, context.exception.status_code)
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_deleteContact_removesTheContact(self, mock_get_db):
+
+    def test_deleteContact_removesTheContact(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -478,8 +479,8 @@ class UsrServices_Should(unittest.TestCase):
         self.assertEqual({"success": True}, result)
         db.delete.assert_called_once()
 
-    @patch("app.api.routes.users.service.get_db")
-    def test_deleteContact_raisesHTTPExceptionWhenContatcNotFound(self, mock_get_db):
+
+    def test_deleteContact_raisesHTTPExceptionWhenContatcNotFound(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -495,3 +496,59 @@ class UsrServices_Should(unittest.TestCase):
             delete_contact("contact_username", "user_username", db)
         self.assertEqual(404, context.exception.status_code)
 
+
+    def test_view_returnsAllUsernamesWhenNoPagination(self):
+        # Arrange
+        db = fake_db()
+        user_contacts = ["contact1", "contact2", "contact3"]
+        db.query = Mock()
+        db.filter= Mock()
+        db.query.return_value.filter.return_value = [
+            Mock(contact_username="contact1"),
+            Mock(contact_username="contact2"),
+            Mock(contact_username="contact3"),
+        ]
+
+        # Act
+        result = view("user1", db=db)
+
+        # Assert
+        expected_usernames = [ContactDTO.from_query_result(c) for c in user_contacts]
+        self.assertEqual(expected_usernames, result)
+
+
+    def test_view_returnsPaginatedUsernames(self):
+        # Arrange
+        db = fake_db()
+        user_contacts = ["contact1", "contact2", "contact3"]
+        page = 2
+        limit = 2
+        offset = (page - 1) * limit
+        db.query = Mock()
+        db.filter= Mock()
+        db.offset = Mock()
+        db.limit = Mock()
+        db.query.return_value.filter.return_value.offset.return_value.limit.return_value = [
+            Mock(contact_username=contact) for contact in user_contacts[offset : offset + limit]
+        ]
+
+        # Act
+        result = view("user1", page=page, limit=limit, db=db)
+
+        # Assert
+        expected_usernames = [ContactDTO.from_query_result(c) for c in user_contacts[offset : offset + limit]]
+        self.assertEqual(expected_usernames, result)
+
+
+    def test_view_returnsEmptyListWhenNoContacts(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.filter= Mock()
+        db.query.return_value.filter.return_value = []
+
+        # Act
+        result = view("user1", db=db)
+
+        # Assert
+        self.assertEqual([], result)
