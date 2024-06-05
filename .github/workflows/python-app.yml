@@ -71,3 +71,4 @@ jobs:
         python -m unittest discover -s tests/transaction_tests -p "*_test.py"     
         python -m unittest discover -s tests/account_tests -p "*_test.py"
         python -m unittest discover -s tests/card_tests -p "*_test.py"
+        python -m unittest discover -s tests/admin_tests -p "*_test.py"
