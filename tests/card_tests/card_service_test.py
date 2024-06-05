@@ -1,4 +1,5 @@
 import unittest
+from jose import jwt
 from unittest.mock import patch, Mock, call 
 from app.core.models import Card
 from datetime import timedelta, date
@@ -8,10 +9,13 @@ from app.api.routes.cards.service import (
                                         create_cvv_number, 
                                         create_card_number, 
                                         create_expiration_date, 
+                                        decrypt_cvv,
                                         get_user_fullname,
                                         get_card_by_id,
-                                        delete
+                                        delete,
                                         )
+
+
 
 def fake_card():
     return Mock()
@@ -41,35 +45,6 @@ class CardsServiceShould(unittest.TestCase):
         self.assertEqual(len(result), 19)
         create_mock.assert_called_with('0123456789')
         self.assertEqual(create_mock.call_count, 16)
-
-
-    @patch("app.api.routes.cards.service.date")
-    def test_createExpirationDate_IsCorrect(self, date_mock):
-        #Arrange
-        fixed_time_now = date.today()
-        date_mock.today.return_value = fixed_time_now
-        date_mock.timedelta = timedelta
-
-        # Act 
-        result = create_expiration_date()
-
-        #Assert
-        expected_date = fixed_time_now + timedelta(days=1826)
-        self.assertEqual(expected_date, result)
-
-
-    @patch('app.api.routes.cards.service.random.choice')
-    def test_generateCvv_IsCorrectFormat(self, mock_random_choice):
-        # Arrange
-        mock_random_choice.side_effect = lambda x: x[0]
-        
-        # Act 
-        result = create_cvv_number()
-
-        # Assert
-        self.assertEqual(len(result), 40)
-        mock_random_choice.assert_called_with('0123456789')
-        self.assertEqual(mock_random_choice.call_count, 3)
 
 
     @patch('app.api.routes.cards.service.create_card_number')
@@ -109,6 +84,70 @@ class CardsServiceShould(unittest.TestCase):
             call(card_number='3456-7890-1234-5678')
         ], any_order=True)
         assert mock_query.filter_by.call_count == 3
+
+
+    @patch("app.api.routes.cards.service.date")
+    def test_createExpirationDate_IsCorrect(self, date_mock):
+        #Arrange
+        fixed_time_now = date.today()
+        date_mock.today.return_value = fixed_time_now
+        date_mock.timedelta = timedelta
+
+        # Act 
+        result = create_expiration_date()
+
+        #Assert
+        expected_date = fixed_time_now + timedelta(days=1826)
+        self.assertEqual(expected_date, result)
+
+
+    @patch('app.api.routes.cards.service.random.choice')
+    def test_generateCvv_randomChoiceIsCalledCorrectly(
+        self, 
+        mock_random_choice
+        ):
+        # Arrange
+        mock_random_choice.side_effect = lambda x: x[0]
+        
+        # Act
+        result = create_cvv_number()
+
+        # Assert
+        self.assertEqual(len(result), 99)
+        mock_random_choice.assert_called_with('0123456789')
+        self.assertEqual(mock_random_choice.call_count, 3)
+
+
+    # @patch('app.api.routes.cards.service.random.choice')
+    @patch('random.choice') # also works
+    def test_createCvvNumber_encryptCvv_encryptsCorrectly(self, mock_random_choice):
+        # Arrange
+        mock_random_choice.side_effect = ['4', '4', '4']  # Predictable CVV '123'
+        
+        # Act
+        formatted_cvv = create_cvv_number()
+
+        # Assert
+        expected_encrypted_cvv = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdnYiOiI0NDQifQ.fknnE5fh6cZHpIBnW934gIxqQsm2zdq3PDPgUQ8hd4Y"
+        self.assertEqual(formatted_cvv, expected_encrypted_cvv)
+
+
+    @patch('app.api.routes.cards.service.jwt.decode')
+    def test_decryptCvv_returnsCorrectFormat(
+        self, 
+        mock_jwt_decode
+        ):
+        # Arrange
+        mock_jwt_decode.return_value = '444'
+        
+        # Act
+        encrypted_cvv = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjdnYiOiI0NDQifQ.fknnE5fh6cZHpIBnW934gIxqQsm2zdq3PDPgUQ8hd4Y"
+        actual_result = decrypt_cvv(encrypted_cvv)
+
+        # Assert
+        self.assertEqual(len(actual_result), 3)
+        self.assertEqual(mock_jwt_decode.return_value, actual_result)
+        self.assertTrue(actual_result.isdigit(), "service.decrypt_cvv does not return digits")
 
 
     def test_getUserFullName_returnsCorrectName(self):
@@ -195,7 +234,7 @@ class CardsServiceShould(unittest.TestCase):
         db = fake_db()
         db.delete = Mock()
         db.commit = Mock()
-        mock_get_db.return_value = db
+        # mock_get_db.return_value = db
 
         card_to_delete = Mock(spec=Card)
         mock_get_card_by_id.return_value = card_to_delete
@@ -207,3 +246,5 @@ class CardsServiceShould(unittest.TestCase):
         mock_get_card_by_id.assert_called_once_with(card.id, db)
         db.delete.assert_called_once_with(card_to_delete)
         db.commit.assert_called_once()
+
+

@@ -39,7 +39,6 @@ def create_cvv_number():
 
 def encrypt_cvv(random_cvv):
     to_encode = {"cvv": random_cvv}
-    # resulting_cvv = sha1(random_cvv.encode("utf-8")).hexdigest()
     encoded_cvv = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_cvv
 
@@ -92,6 +91,8 @@ def delete(id:int, db: Session):
 
 def get_view(current_user: UserViewDTO, db: Session):
     cards_list = db.query(Card).filter(Card.account_id==current_user.id).all()
+    
+    #Helper; only to see what happens in terminal
     for i in cards_list:
         print(i)
 

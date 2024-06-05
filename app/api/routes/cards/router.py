@@ -28,7 +28,10 @@ def create_card(
     )
 
 @card_router.get("/")
-def view_cards(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], db: Session = Depends(get_db)):
+def view_cards(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)], 
+    db: Session = Depends(get_db)
+    ):
         
     cards = get_view(current_user, db)
 
@@ -55,7 +58,7 @@ def delete_card(
     current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
     db: Session = Depends(get_db),
 ):
-
+# To determine how to handle when card expires?
     existing_card = get_card_by_id(id, db)
 
     if existing_card.account_id == current_user.id:
@@ -75,4 +78,3 @@ def delete_card(
         )
 
 
-# To determine how to handle when card expires?
