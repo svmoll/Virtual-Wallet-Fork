@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.db_dependency import get_db
-from .schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO
+from .schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO, ContactDTO
 from app.core.models import User, Account, Contact
 from app.api.auth_service.auth import hash_pass
 from sqlalchemy.exc import IntegrityError
@@ -153,3 +153,19 @@ def delete_contact(contact_username: str, user_username: str, db: Session = Depe
         return {"success": True}
     else:
         raise HTTPException(status_code=404, detail="Contact does not exist")
+
+def view(username: str, page: int | None = None, limit: int | None = None, db: Session = Depends(get_db)):
+    if page is not None and limit is not None:
+        offset = (page - 1) * limit
+        contacts = db.query(Contact.contact_username).filter(Contact.user_username == username)
+
+        # Apply pagination
+        contacts = contacts.offset(offset).limit(limit)
+        usernames = [ContactDTO.from_query_result(contact.contact_username) for contact in contacts]
+        return usernames
+
+    else:
+        contacts = db.query(Contact.contact_username).filter(Contact.user_username == username)
+        usernames = [ContactDTO.from_query_result(contact.contact_username) for contact in contacts]
+        return usernames
+
