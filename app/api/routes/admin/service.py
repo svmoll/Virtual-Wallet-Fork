@@ -35,3 +35,18 @@ def search_user(username: str = None, email: str = None, phone_number: str = Non
         return (UserFromSearchDTO(username=user.username, email=user.email) for user in users)
 
 
+def status(username: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(username=username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User with that username was not found")
+
+    if user.is_blocked == 0:
+        user.is_blocked = 1
+        db.commit()
+        db.refresh(user)
+        return f"{user.username} is blocked"
+    else:
+        user.is_blocked = 0
+        db.commit()
+        db.refresh(user)
+        return f"{user.username} is unblocked"

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, MagicMock
 from fastapi import HTTPException
 from sqlalchemy.orm import sessionmaker
-from app.api.routes.admin.service import search_user, check_is_admin
+from app.api.routes.admin.service import search_user, check_is_admin, status
 from app.api.routes.users.schemas import UserFromSearchDTO
 from app.core.models import User
 
@@ -14,7 +14,9 @@ def fake_user():
             email="test@example.com",
             phone_number="1234567890",
             is_admin=False,
-            is_restricted=False
+            is_restricted=False,
+            is_blocked=False,
+
         )
 
 Session = sessionmaker()
@@ -204,3 +206,55 @@ class AdminService_Should(unittest.TestCase):
         # Assert
         self.assertFalse(result)
 
+    def tests_status_changesUserStatusToBlocked(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.commit = Mock()
+        db.refresh = Mock()
+        user = fake_user()
+        user.username = "testuser"
+        user.is_blocked = 0
+        db.query( ).filter_by( ).first.return_value = user
+
+
+        # Act
+        result = status("testuser", db)
+
+        # Assert
+        self.assertEqual("testuser is blocked", result)
+        self.assertEqual(1, user.is_blocked)
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(user)
+
+    def tests_status_changesUserStatusToUnblocked(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.commit = Mock()
+        db.refresh = Mock()
+        user = fake_user()
+        user.username = "testuser"
+        user.is_blocked = 1
+        db.query( ).filter_by( ).first.return_value = user
+
+
+        # Act
+        result = status("testuser", db)
+
+        # Assert
+        self.assertEqual("testuser is unblocked", result)
+        self.assertEqual(0, user.is_blocked)
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(user)
+    def tests_status_raisesHTTPExceptionWhenUserNotFound(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        db.query( ).filter_by( ).first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            status("nonexistentuser", db)
+        self.assertEqual(404, context.exception.status_code)
+        self.assertEqual("User with that username was not found", context.exception.detail)
