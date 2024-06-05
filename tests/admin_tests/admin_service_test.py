@@ -15,7 +15,6 @@ def fake_user():
             phone_number="1234567890",
             is_admin=False,
             is_restricted=False,
-            is_blocked=False,
 
         )
 
@@ -257,4 +256,4 @@ class AdminService_Should(unittest.TestCase):
         with self.assertRaises(HTTPException) as context:
             status("nonexistentuser", db)
         self.assertEqual(404, context.exception.status_code)
-        self.assertEqual("User with that username was not found", context.exception.detail)
+        self.assertEqual("Account with that username was not found", context.exception.detail)

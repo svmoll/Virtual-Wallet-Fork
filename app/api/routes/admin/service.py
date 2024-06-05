@@ -2,7 +2,7 @@ from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.api.routes.users.schemas import UserFromSearchDTO
 from app.core.db_dependency import get_db
-from app.core.models import User
+from app.core.models import User, Account
 
 def check_is_admin(id: int, db: Session = Depends(get_db)) -> bool:
     user = db.query(User).filter(User.id == id).first()
@@ -36,17 +36,17 @@ def search_user(username: str = None, email: str = None, phone_number: str = Non
 
 
 def status(username: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(username=username).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User with that username was not found")
+    account = db.query(Account).filter_by(username=username).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account with that username was not found")
 
-    if user.is_blocked == 0:
-        user.is_blocked = 1
+    if account.is_blocked == 0:
+        account.is_blocked = 1
         db.commit()
-        db.refresh(user)
-        return f"{user.username} is blocked"
+        db.refresh(account)
+        return f"{account.username} is blocked"
     else:
-        user.is_blocked = 0
+        account.is_blocked = 0
         db.commit()
-        db.refresh(user)
-        return f"{user.username} is unblocked"
+        db.refresh(account)
+        return f"{account.username} is unblocked"

@@ -39,7 +39,6 @@ class User(Base):
     photo_path: Mapped[str] = mapped_column(String(length=300), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
