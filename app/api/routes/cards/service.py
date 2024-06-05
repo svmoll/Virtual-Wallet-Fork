@@ -57,7 +57,7 @@ def get_user_fullname(current_user, db: Session):
 def create(current_user: UserViewDTO, db: Session):
     expiration_date = create_expiration_date()
     card_number = unique_card_number(db)
-    cvv_number = create_cvv_number(card_number, expiration_date)
+    cvv_number = create_cvv_number()
     user = get_user_fullname(current_user, db)
 
     new_card = Card(
@@ -82,6 +82,7 @@ def get_card_by_id(id:int, db: Session) -> Card:
 
     return card
 
+
 def delete(id:int, db: Session):
     card_to_delete = get_card_by_id(id, db)
 
@@ -101,4 +102,7 @@ def get_view(current_user: UserViewDTO, db: Session):
             } for card in cards_list]
 
     return cards_list
+
+
+
 
