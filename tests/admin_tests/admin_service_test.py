@@ -49,6 +49,7 @@ def fake_user_dto2():
 
 def fake_transaction():
     return Mock(
+    id = 1,
     sender_account = "tester",
     receiver_account = "tester2",
     amount = 100,
@@ -59,6 +60,7 @@ def fake_transaction():
 
 def fake_transaction2():
     return Mock(
+    id = 2,
     sender_account = "tester2",
     receiver_account = "tester3",
     amount = 200,

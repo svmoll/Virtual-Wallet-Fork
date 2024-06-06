@@ -52,6 +52,7 @@ def fake_user_dto2():
 
 def fake_transaction_dto():
     return TransactionViewDTO(
+        id=1,
         sender="tester",
         receiver="tester2",
         amount=100,

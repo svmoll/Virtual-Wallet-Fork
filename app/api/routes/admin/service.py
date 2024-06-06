@@ -111,3 +111,16 @@ def view_transactions(sender, receiver, status,flagged, sort, page, limit, db: S
     ) for transaction in transactions]
 
     return transactions_dto
+
+
+def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    transaction = db.query(Transaction).filter_by(id=transaction_id).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction with that id was not found")
+    if transaction.status != "pending":
+        raise HTTPException(status_code=400, detail="Cannot denied non pending transactions")
+
+    transaction.status = "denied"
+
+
+    db.commit()
