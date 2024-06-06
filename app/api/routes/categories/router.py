@@ -1,14 +1,13 @@
 from typing import Annotated
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from app.core.db_dependency import get_db
-from .schemas import CategoryDTO
 from sqlalchemy.orm import Session
-from .service import create_category as cs
+from .service import create
 from ..users.schemas import UserViewDTO
 from ...auth_service import auth
-
-# from .service import CategoryService
+from .schemas import CategoryDTO
+from fastapi.responses import JSONResponse, Response
+from app.api.utils.responses import BadRequest
 
 
 category_router = APIRouter(prefix="/categories", tags=["Category"])
@@ -20,6 +19,16 @@ def create_category(
     category: CategoryDTO,
     db: Session = Depends(get_db),
 ):
-    created_category = cs(category, db)
+    #if no categories_exists,
+    created_category = create(category, db)
+    # else
+    #     raise BadRequest()
+    #exceptions handling
 
-    return {"message": "Category created successfully", "category": created_category}
+    if created_category:
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": f"{created_category.name} category is created successfully"
+            },
+        )

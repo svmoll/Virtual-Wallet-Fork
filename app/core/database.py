@@ -8,7 +8,7 @@ from sqlalchemy.sql import text
 
 # Database configuration from environment variables
 db_username = os.getenv("DB_USERNAME", "root")
-db_password = os.getenv("DB_PASSWORD", "new_password")
+db_password = os.getenv("DB_PASSWORD", "0666")
 db_url = os.getenv("DB_URL", "127.0.0.1:3306")
 db_name = os.getenv("DB_NAME", "virtual_wallet")
 
