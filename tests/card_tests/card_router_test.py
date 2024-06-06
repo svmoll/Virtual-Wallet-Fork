@@ -2,25 +2,42 @@ import unittest
 from unittest.mock import patch, Mock
 from fastapi.responses import JSONResponse
 from app.api.routes.users.schemas import UserViewDTO
-from app.api.routes.cards.schemas import DeleteCardDTO
-from app.api.routes.cards.router import create_card, delete_card
+from app.api.routes.cards.schemas import CardDTO
+from app.api.routes.cards.router import create_card, delete_card, view_cards
+from fastapi import status
 import json
 
 def fake_card():
-    return DeleteCardDTO(
+    return CardDTO(
                         id=1,
                         account_id=1,
-                        card_number='8765-4321-1234-5678'
+                        card_number='8765-4321-1234-5678',
+                        expiration_date="2029-05-31",
+                        card_holder="test_user",
+                        cvv="444"
                         )
 
+def fake_card_json():
+    return [
+            {
+                'card_number': '1234-5678-8765-4321',
+                'expiration_date': '2025-12-31',
+                'cvv': '123'
+            }
+        ]
+
+
+
 def fake_db():
-    return Mock()   
+    return Mock()
+
 
 def fake_user():
     return UserViewDTO(
          id=1,
          username='test_user'
     )
+
 
 class CardRouter_Should(unittest.TestCase):
 
@@ -44,12 +61,93 @@ class CardRouter_Should(unittest.TestCase):
         # Assert
         self.assertIsInstance(response, JSONResponse)
         self.assertEqual(response.status_code, 201)
-        response_body = response.body.decode('utf-8')
-        response_body_dict = json.loads(response_body)
-        self.assertEqual(response_body_dict, 
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body,  
                          {'message': f'New card for username: {mock_user.username} is created successfully.'}
                          )
         mock_create.assert_called_once_with(mock_user, mock_db)
+
+
+    @patch('app.api.routes.cards.router.get_view')
+    def test_getCards_returnsTheCorrectStatusCodeAndMsg_WhenNoCards(
+        self,
+        mock_get_view
+        ):
+        
+        # Arrange
+        mock_user = fake_user()
+        mock_db = fake_db()
+
+        mock_get_view.return_value = None 
+
+        # Act
+        response = view_cards(mock_user, mock_db)
+
+        # Assert
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, 200)
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body, 
+                         {'message': f'There are no associated cards with your username: {mock_user.username}.'}
+                         )
+        mock_get_view.assert_called_once_with(mock_user, mock_db)
+
+
+    @patch('app.api.routes.cards.router.get_view')
+    def test_getCards_returnsTheCorrectStatusCodeMsgCardList_WhenUserHasCards(
+        self,
+        mock_get_view
+        ):
+        
+        # Arrange
+        mock_user = fake_user()
+        mock_db = fake_db()
+        mock_created_card = fake_card_json()
+        mock_get_view.return_value = mock_created_card
+
+        # Act
+        response = view_cards(mock_user, mock_db)
+
+        # Assert
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, 200)
+        response_body = json.loads(response.body.decode('utf-8'))
+        expected_response_body = {
+                                'message': f'The following cards are associated with username: {mock_user.username}.',
+                                'cards': mock_created_card
+                                }
+        self.assertEqual(response_body, expected_response_body)
+        mock_get_view.assert_called_once_with(mock_user, mock_db)
+
+
+    # @patch('app.api.routes.cards.router.get_view')
+    # def 2test_getCards_returnsTheCorrectStatusCodeMsgCardList_WhenUserHasCards(self, mock_get_view):
+    #     # Arrange
+    #     mock_user = fake_user()
+    #     # mock_user.username = 'test_user'
+    #     mock_db = fake_db()
+        
+    #     mock_cards = [
+    #         {
+    #             "card_number": "1234-5678-8765-4321",
+    #             "expiration_date": "2025-12-31",
+    #             "cvv": "123"
+    #         }
+    #     ]
+    #     mock_get_view.return_value = mock_cards
+
+    #     # Act
+    #     response = view_cards(mock_user, mock_db)
+
+    #     # Assert
+    #     self.assertIsInstance(response, JSONResponse)
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     expected_content = {
+    #         "message": "The following cards are associated with username: test_user.",
+    #         "cards": mock_cards
+    #     }
+    #     response_body = json.loads(response.body.decode('utf-8'))
+    #     self.assertEqual(response_body, expected_content)
 
 
     @patch("app.api.routes.cards.router.delete")
@@ -83,9 +181,8 @@ class CardRouter_Should(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         mock_get_card_by_id.assert_called_once_with(1, db)
         mock_service_delete.assert_called_once_with(1, db)
-        response_body = response.body.decode('utf-8')
-        response_body_dict = json.loads(response_body)
-        self.assertEqual(response_body_dict, {
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body, {
             'message': f"Your card with number: {card_to_delete.card_number} has been deleted successfully."
         })
 
@@ -114,10 +211,10 @@ class CardRouter_Should(unittest.TestCase):
         # Assert
         self.assertIsInstance(response, JSONResponse)
         self.assertEqual(response.status_code, 400)
-        response_body = response.body.decode('utf-8')
-        response_body_dict = json.loads(response_body)
-        self.assertEqual(response_body_dict, {
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body,  {
             'message': f"Card with ID of {card_to_delete.id} does not belong to username: {mock_user.username}. "
         })
         mock_get_card_by_id.assert_called_once_with(1, db)
+
 

@@ -1,13 +1,17 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
-from ..users.schemas import UserDTO
+from ..users.schemas import UserViewDTO
 from app.core.models import Card, User
+from jose import jwt
 from datetime import timedelta, date
-from hashlib import sha256, sha1
 import random
 import string
 
+
+
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7"
+ALGORITHM = "HS256"
 
 def create_card_number():
     digits = string.digits 
@@ -30,13 +34,18 @@ def create_expiration_date():
 def create_cvv_number():
     digits = string.digits 
     random_cvv = ''.join(random.choice(digits) for _ in range(3))
-    hashed_cvv = hash_cvv(random_cvv)
-    return hashed_cvv
+    formatted_cvv = encrypt_cvv(random_cvv)
+    return formatted_cvv
+
+def encrypt_cvv(random_cvv):
+    to_encode = {"cvv": random_cvv}
+    encoded_cvv = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_cvv
 
 
-def hash_cvv(random_cvv):
-    hashed_cvv = sha1(random_cvv.encode("utf-8")).hexdigest()
-    return hashed_cvv
+def decrypt_cvv(cvv):
+    decoded_cvv = jwt.decode(cvv, SECRET_KEY, algorithms=[ALGORITHM])
+    return decoded_cvv
 
 
 def get_user_fullname(current_user, db: Session):
@@ -44,7 +53,7 @@ def get_user_fullname(current_user, db: Session):
     return user
 
 
-def create(current_user: UserDTO, db: Session):
+def create(current_user: UserViewDTO, db: Session):
     expiration_date = create_expiration_date()
     card_number = unique_card_number(db)
     cvv_number = create_cvv_number()
@@ -72,12 +81,29 @@ def get_card_by_id(id:int, db: Session) -> Card:
 
     return card
 
+
 def delete(id:int, db: Session):
     card_to_delete = get_card_by_id(id, db)
 
     db.delete(card_to_delete)
     db.commit()
+
+
+def get_view(current_user: UserViewDTO, db: Session):
+    cards_list = db.query(Card).filter(Card.account_id==current_user.id).all()
     
+    #Helper; only to see what happens in terminal
+    for i in cards_list:
+        print(i)
+
+    cards_list = [{
+            "card_number": card.card_number,
+            "expiration_date": card.expiration_date.isoformat(),
+            "cvv": decrypt_cvv(card.cvv)["cvv"]
+            } for card in cards_list]
+
+    return cards_list
+
 
 
 

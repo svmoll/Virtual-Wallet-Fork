@@ -121,7 +121,7 @@ class Card(Base):
     )
     expiration_date: Mapped[date] = mapped_column(Date, nullable=False)
     card_holder: Mapped[str] = mapped_column(String(length=50), nullable=False)
-    cvv: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    cvv: Mapped[str] = mapped_column(String(length=99), nullable=False)
     design_path: Mapped[str] = mapped_column(String(length=150), nullable=True)
 
     cards_accounts = relationship("Account", back_populates="accounts_cards")
