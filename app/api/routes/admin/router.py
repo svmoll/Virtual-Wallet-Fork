@@ -1,5 +1,6 @@
 from typing import List, Annotated, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from fastapi import APIRouter, Depends, Query, HTTPException, Body, status
+from fastapi.openapi.models import Response
 from starlette.responses import JSONResponse
 
 from app.api.auth_service import auth
@@ -62,3 +63,15 @@ def view_transactions(current_user: Annotated[UserViewDTO, Depends(auth.get_user
         return JSONResponse(status_code=404, content={"message": "Transactions not found"})
 
     return transactions
+
+@admin_router.put("/deny/transactions")
+def deny_transaction(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                     transaction_id: Optional[int] = Query(None, description="Transaction ID"),
+                     db: Session = Depends(get_db)):
+    if not service.check_is_admin(current_user.id, db):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    service.deny_transaction(transaction_id, db)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
