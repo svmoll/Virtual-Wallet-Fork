@@ -287,7 +287,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).all.return_value = transactions
 
         # Act
-        result = view_transactions(None, None, None, None, None, None, db)
+        result = view_transactions(None, None, None, None,None, None, None, db)
 
         # Assert
         self.assertEqual(1, len(result))
@@ -304,7 +304,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).filter.return_value.all.return_value = transactions
 
         # Act
-        result = view_transactions(sender="tester", receiver=None, status=None, sort=None, page=None, limit=None, db=db)
+        result = view_transactions(sender="tester", receiver=None, status=None, sort=None,flagged=None, page=None, limit=None, db=db)
 
         # Assert
         self.assertEqual(1, len(result))
@@ -321,7 +321,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).filter.return_value.all.return_value = transactions
 
         # Act
-        result = view_transactions(sender=None, receiver="tester2", status=None, sort=None, page=None, limit=None,
+        result = view_transactions(sender=None, receiver="tester2", status=None, sort=None,flagged=None, page=None, limit=None,
                                    db=db)
 
         # Assert
@@ -337,7 +337,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).filter.return_value.all.return_value = transactions
 
         # Act
-        result = view_transactions(sender=None, receiver=None, status="completed", sort=None, page=None, limit=None,
+        result = view_transactions(sender=None, receiver=None, status="completed", sort=None,flagged=None, page=None, limit=None,
                                    db=db)
 
         # Assert
@@ -352,7 +352,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).offset.return_value.limit.return_value.all.return_value = transactions
 
         # Act
-        result = view_transactions(sender=None, receiver=None, status=None, sort=None, page=1, limit=2, db=db)
+        result = view_transactions(sender=None, receiver=None, status=None, sort=None,flagged=None, page=1, limit=2, db=db)
 
         # Assert
         self.assertEqual(2, len(result))
@@ -367,7 +367,7 @@ class AdminService_Should(unittest.TestCase):
         db.query(Transaction).order_by.return_value.all.return_value = transactions
 
         # Act
-        result = view_transactions(sender=None, receiver=None, status=None, sort="amount_asc", page=None, limit=None,
+        result = view_transactions(sender=None, receiver=None, status=None, sort="amount_asc",flagged=None, page=None, limit=None,
                                    db=db)
 
         # Assert
@@ -383,7 +383,7 @@ class AdminService_Should(unittest.TestCase):
 
         # Act & Assert
         with self.assertRaises(HTTPException) as context:
-            view_transactions(sender="nonexistent", receiver=None, status=None, sort=None, page=None, limit=None, db=db)
+            view_transactions(sender="nonexistent", receiver=None, status=None, sort=None,flagged=None, page=None, limit=None, db=db)
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "User with that username was not found")
 
@@ -395,6 +395,6 @@ class AdminService_Should(unittest.TestCase):
 
         # Act & Assert
         with self.assertRaises(HTTPException) as context:
-            view_transactions(sender=None, receiver="nonexistent", status=None, sort=None, page=None, limit=None, db=db)
+            view_transactions(sender=None, receiver="nonexistent", status=None, sort=None, flagged=None, page=None, limit=None, db=db)
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "User with that username was not found")
