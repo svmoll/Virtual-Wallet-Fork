@@ -1,10 +1,11 @@
 import unittest
+from datetime import datetime
 from unittest.mock import Mock, MagicMock
 from fastapi import HTTPException
 from sqlalchemy.orm import sessionmaker
-from app.api.routes.admin.service import search_user, check_is_admin, status
+from app.api.routes.admin.service import search_user, check_is_admin, status, view_transactions
 from app.api.routes.users.schemas import UserFromSearchDTO
-from app.core.models import User
+from app.core.models import User, Transaction
 
 
 def fake_user():
@@ -46,6 +47,25 @@ def fake_user_dto2():
         is_restricted=False,
     )
 
+def fake_transaction():
+    return Mock(
+    sender_account = "tester",
+    receiver_account = "tester2",
+    amount = 100,
+    status = "completed",
+    is_flagged = False,
+    type="transfer",
+    transaction_date=datetime(2022, 1, 1))
+
+def fake_transaction2():
+    return Mock(
+    sender_account = "tester2",
+    receiver_account = "tester3",
+    amount = 200,
+    status = "completed",
+    is_flagged = False,
+    type="transfer",
+    transaction_date=datetime(2022, 1, 2))
 class AdminService_Should(unittest.TestCase):
 
     def test_searchUser_byUsername(self):
@@ -120,7 +140,7 @@ class AdminService_Should(unittest.TestCase):
         with self.assertRaises(HTTPException):
             search_user(phone_number="1234567890", db=db)
 
-    def test_searchUser_pagination_withPageAndLimit(self):
+    def test_searchUser_withPageAndLimit(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -136,7 +156,7 @@ class AdminService_Should(unittest.TestCase):
         self.assertEqual(result_list[0].username, "tester")
         self.assertEqual(result_list[1].username, "tester2")
 
-    def test_searchUser_pagination_withoutPageAndLimit(self):
+    def test_searchUser_withoutPageAndLimit(self):
         # Arrange
         db = fake_db( )
         db.query = Mock( )
@@ -178,7 +198,7 @@ class AdminService_Should(unittest.TestCase):
         # Arrange
         db = fake_db()
         db.query = Mock()
-        user = Mock(spec=User)
+        user = fake_user()
         user.is_admin = True
         db.query( ).filter( ).first.return_value = user
 
@@ -194,7 +214,7 @@ class AdminService_Should(unittest.TestCase):
         # Arrange
         db = fake_db()
         db.query = Mock()
-        user = Mock(spec=User)
+        user = fake_user()
         user.is_admin = False
         db.query( ).filter( ).first.return_value = user
 
@@ -257,3 +277,124 @@ class AdminService_Should(unittest.TestCase):
             status("nonexistentuser", db)
         self.assertEqual(404, context.exception.status_code)
         self.assertEqual("Account with that username was not found", context.exception.detail)
+
+
+    def test_viewTransactions_withNoFilters(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock()
+        transactions = [fake_transaction()]
+        db.query(Transaction).all.return_value = transactions
+
+        # Act
+        result = view_transactions(None, None, None, None,None, None, None, db)
+
+        # Assert
+        self.assertEqual(1, len(result))
+        self.assertEqual("tester", result[0].sender, )
+        self.assertEqual("tester2", result[0].receiver)
+
+    def test_viewTransactions_withSenderFilter(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        user = fake_user()
+        transactions = [fake_transaction( )]
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Transaction).filter.return_value.all.return_value = transactions
+
+        # Act
+        result = view_transactions(sender="tester", receiver=None, status=None, sort=None,flagged=None, page=None, limit=None, db=db)
+
+        # Assert
+        self.assertEqual(1, len(result))
+        self.assertEqual("tester", result[0].sender)
+        self.assertEqual("tester2", result[0].receiver)
+
+    def test_viewTransactions_withReceiverFilter(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        user = fake_user()
+        transactions = [fake_transaction( )]
+        db.query(User).filter_by.return_value.first.return_value = user
+        db.query(Transaction).filter.return_value.all.return_value = transactions
+
+        # Act
+        result = view_transactions(sender=None, receiver="tester2", status=None, sort=None,flagged=None, page=None, limit=None,
+                                   db=db)
+
+        # Assert
+        self.assertEqual(1, len(result))
+        self.assertEqual("tester", result[0].sender)
+        self.assertEqual("tester2", result[0].receiver)
+
+    def test_viewTransactions_withStatusFilter(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock()
+        transactions = [fake_transaction()]
+        db.query(Transaction).filter.return_value.all.return_value = transactions
+
+        # Act
+        result = view_transactions(sender=None, receiver=None, status="completed", sort=None,flagged=None, page=None, limit=None,
+                                   db=db)
+
+        # Assert
+        self.assertEqual(1, len(result))
+        self.assertEqual("completed", result[0].status)
+
+    def test_viewTransactions_withPagination(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        transactions = [fake_transaction( ), fake_transaction2()]
+        db.query(Transaction).offset.return_value.limit.return_value.all.return_value = transactions
+
+        # Act
+        result = view_transactions(sender=None, receiver=None, status=None, sort=None,flagged=None, page=1, limit=2, db=db)
+
+        # Assert
+        self.assertEqual(2, len(result))
+        self.assertEqual("tester", result[0].sender)
+        self.assertEqual("tester2", result[1].sender)
+
+    def test_viewTransactions_withSort(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        transactions = [fake_transaction( ), fake_transaction2()]
+        db.query(Transaction).order_by.return_value.all.return_value = transactions
+
+        # Act
+        result = view_transactions(sender=None, receiver=None, status=None, sort="amount_asc",flagged=None, page=None, limit=None,
+                                   db=db)
+
+        # Assert
+        self.assertEqual(2, len(result))
+        self.assertEqual(100, result[0].amount)
+        self.assertEqual(200, result[1].amount)
+
+    def test_viewTransactions_senderNotFound(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.query(User).filter_by.return_value.first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            view_transactions(sender="nonexistent", receiver=None, status=None, sort=None,flagged=None, page=None, limit=None, db=db)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "User with that username was not found")
+
+    def test_viewTransactions_receiverNotFound(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.query(User).filter_by.return_value.first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            view_transactions(sender=None, receiver="nonexistent", status=None, sort=None, flagged=None, page=None, limit=None, db=db)
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "User with that username was not found")
