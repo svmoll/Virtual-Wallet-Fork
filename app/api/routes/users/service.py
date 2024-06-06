@@ -5,7 +5,33 @@ from app.core.models import User, Account, Contact
 from app.api.auth_service.auth import hash_pass
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, Depends
+from mailjet_rest import Client
 
+
+def email_sender(user):
+    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
+    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
+    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin"
+                },
+                "To": [
+                    {
+                        "Email": "kis.team.telerik@gmail.com",
+                        "Name": "Kis"
+                    }
+                ],
+                "Subject": f"New Registration UserID:{user.id}",
+                "HTMLPart": f"<h3>New user {user.username} with id:{user.id} waits for confirmation</h3><br />May the delivery force be with you!",
+                "CustomID": "AppGettingStartedTest"
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
 
 def create(user: UserDTO, db: Session):
     try:
@@ -25,6 +51,7 @@ def create(user: UserDTO, db: Session):
         db.add(account)
         db.commit()
         db.refresh(account)
+        email_sender(new_user)
         return new_user
     except IntegrityError as e:
         db.rollback()
