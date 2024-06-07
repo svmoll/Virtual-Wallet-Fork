@@ -3,11 +3,11 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch, Mock, MagicMock
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.orm import sessionmaker
 from starlette.responses import JSONResponse
 
-from app.api.routes.admin.router import search_users, change_status, view_transactions
+from app.api.routes.admin.router import search_users, change_status, view_transactions, deny_transaction
 from app.api.routes.admin.schemas import TransactionViewDTO
 from app.api.routes.users.schemas import UserViewDTO
 
@@ -372,3 +372,41 @@ class AdminRouter_Should(unittest.TestCase):
         self.assertIsInstance(response, JSONResponse)
         self.assertEqual(404, response.status_code)
         self.assertEqual("Transactions not found", response_body["message"])
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.admin.service.check_is_admin")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    @patch("app.api.routes.admin.service.deny_transaction")
+    def test_denyTransaction_success(self, mock_deny_transaction, mock_get_user, mock_check_is_admin, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        user = fake_user_view( )
+        mock_get_user.return_value = user
+        mock_check_is_admin.return_value = True
+        mock_get_db.return_value = db
+
+        # Act
+        response = deny_transaction(current_user=user, transaction_id=1, db=db)
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        mock_deny_transaction.assert_called_once_with(1, db)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.admin.service.check_is_admin")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    def test_denyTransaction_nonAdminForbidden(self, mock_get_user, mock_check_is_admin, mock_get_db):
+        # Arrange
+        db = fake_db( )
+        user = fake_user_view( )
+        mock_get_user.return_value = user
+        mock_check_is_admin.return_value = False
+        mock_get_db.return_value = db
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            deny_transaction(current_user=user, transaction_id=1, db=db)
+
+        self.assertEqual(403, context.exception.status_code)
+        self.assertEqual("Forbidden", context.exception.detail)
+        mock_check_is_admin.assert_called_once_with(user.id, db)

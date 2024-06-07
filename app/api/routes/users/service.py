@@ -1,12 +1,15 @@
+import logging
+
 from sqlalchemy.orm import Session
 from app.core.db_dependency import get_db
 from .schemas import UserDTO, UpdateUserDTO, UserShowDTO, UserFromSearchDTO, ContactDTO
 from app.core.models import User, Account, Contact
 from app.api.auth_service.auth import hash_pass
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
 from mailjet_rest import Client
 
+logger = logging.getLogger(__name__)
 
 def email_sender(user):
     api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
@@ -54,6 +57,7 @@ def create(user: UserDTO, db: Session):
         email_sender(new_user)
         return new_user
     except IntegrityError as e:
+        logger.error(f"Integrity error during user creation: {e}")
         db.rollback()
         if "phone_number" in str(e.orig):
             raise HTTPException(
@@ -69,9 +73,12 @@ def create(user: UserDTO, db: Session):
             raise HTTPException(
                 status_code=400, detail="Could not complete registration"
             ) from e
-
-# Todo catch some other error exception
-# Todo add messages to logger
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error during user creation: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error"
+        ) from e
 
 def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
     try:
@@ -97,6 +104,7 @@ def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
         return user
 
     except IntegrityError as e:
+        logger.error(f"Integrity error during user creation: {e}")
         db.rollback()
         if "phone_number" in str(e.orig):
             raise HTTPException(
@@ -166,7 +174,8 @@ def create_contact(contact_username: str, user_username: str, db: Session = Depe
     try:
         db.commit( )
         return {"success": True}
-    except IntegrityError:
+    except IntegrityError as e:
+        logger.error(f"Integrity error during user creation: {e}")
         db.rollback( )
         raise HTTPException(status_code=400, detail="Unable to add contact")
 

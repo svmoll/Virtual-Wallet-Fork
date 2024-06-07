@@ -121,6 +121,4 @@ def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Cannot denied non pending transactions")
 
     transaction.status = "denied"
-
-
     db.commit()

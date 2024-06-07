@@ -3,7 +3,7 @@ from datetime import datetime
 from unittest.mock import Mock, MagicMock
 from fastapi import HTTPException
 from sqlalchemy.orm import sessionmaker
-from app.api.routes.admin.service import search_user, check_is_admin, status, view_transactions
+from app.api.routes.admin.service import search_user, check_is_admin, status, view_transactions, deny_transaction
 from app.api.routes.users.schemas import UserFromSearchDTO
 from app.core.models import User, Transaction
 
@@ -64,7 +64,7 @@ def fake_transaction2():
     sender_account = "tester2",
     receiver_account = "tester3",
     amount = 200,
-    status = "completed",
+    status = "pending",
     is_flagged = False,
     type="transfer",
     transaction_date=datetime(2022, 1, 2))
@@ -400,3 +400,56 @@ class AdminService_Should(unittest.TestCase):
             view_transactions(sender=None, receiver="nonexistent", status=None, sort=None, flagged=None, page=None, limit=None, db=db)
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "User with that username was not found")
+
+
+
+    def test_denyTransaction_success(self):
+        # Arrange
+        db = fake_db()
+        db.query = Mock( )
+        db.filter_by = Mock()
+        db.commit = Mock()
+        transaction = fake_transaction2()
+        transaction.status = "pending"
+        db.query().filter_by().first.return_value = transaction
+
+        # Act
+        deny_transaction(2, db)
+
+        # Assert
+        self.assertEqual("denied", transaction.status)
+        db.commit.assert_called_once()
+
+    def test_denyTransaction_transactionNotFound(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.commit = Mock( )
+        db.query(Transaction).filter_by( ).first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            deny_transaction(transaction_id=1, db=db)
+
+        self.assertEqual(404, context.exception.status_code)
+        self.assertEqual("Transaction with that id was not found", context.exception.detail)
+        db.commit.assert_not_called()
+
+    def test_denyTransaction_transactionNotPending(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.filter_by = Mock( )
+        db.commit = Mock( )
+        transaction = fake_transaction( )
+        transaction.status = "completed"
+        db.query(Transaction).filter_by( ).first.return_value = transaction
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            deny_transaction(transaction_id=1, db=db)
+
+        self.assertEqual(400, context.exception.status_code)
+        self.assertEqual("Cannot denied non pending transactions", context.exception.detail)
+        db.commit.assert_not_called()

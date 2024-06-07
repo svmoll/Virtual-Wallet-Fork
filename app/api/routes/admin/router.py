@@ -72,6 +72,6 @@ def deny_transaction(current_user: Annotated[UserViewDTO, Depends(auth.get_user_
         raise HTTPException(status_code=403, detail="Forbidden")
 
     service.deny_transaction(transaction_id, db)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content="")
 
 
