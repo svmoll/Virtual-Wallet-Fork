@@ -9,6 +9,7 @@ class UsersfrimlistDTO(BaseModel):
     password: str
 
 class TransactionViewDTO(BaseModel):
+    id: int
     sender: str
     receiver: str
     amount: int

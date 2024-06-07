@@ -21,5 +21,4 @@ class DeleteCardDTO(BaseModel):
 class CardViewDTO(BaseModel):
     card_number: str
     expiration_date: date
-    card_holder: str 
     cvv: str
