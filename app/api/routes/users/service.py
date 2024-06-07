@@ -10,6 +10,30 @@ from fastapi import HTTPException, Depends
 from mailjet_rest import Client
 
 logger = logging.getLogger(__name__)
+def registration_email_sender(user):
+    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
+    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
+    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet"
+                },
+                "To": [
+                    {
+                        "Email": f"{user.email}",
+                        "Name": f"{user.fullname}"
+                    }
+                ],
+                "Subject": f"Registration to PyMyWallet",
+                "HTMLPart": f"<h3>Thanks for registering, please wait for your registration to be confirmed.</h3><br />May the delivery force be with you!",
+                "CustomID": f"UserID: {user.id}"
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
 
 def email_sender(user):
     api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
@@ -55,6 +79,7 @@ def create(user: UserDTO, db: Session):
         db.commit()
         db.refresh(account)
         email_sender(new_user)
+        registration_email_sender(new_user)
         return new_user
     except IntegrityError as e:
         logger.error(f"Integrity error during user creation: {e}")

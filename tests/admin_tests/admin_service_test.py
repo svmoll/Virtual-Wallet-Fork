@@ -1,13 +1,16 @@
 import unittest
 from datetime import datetime
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from fastapi import HTTPException
 from sqlalchemy.orm import sessionmaker
-from app.api.routes.admin.service import search_user, check_is_admin, status, view_transactions, deny_transaction
+from app.api.routes.admin.service import search_user, check_is_admin, status, view_transactions, deny_transaction, \
+    confirm_user
 from app.api.routes.users.schemas import UserFromSearchDTO
-from app.core.models import User, Transaction
+from app.core.models import User, Transaction, Account
 
 
+def fake_account():
+    return Account(id=1, username="tester", balance=1234.56, is_blocked=1)
 def fake_user():
     return Mock(
             username="testuser",
@@ -15,7 +18,7 @@ def fake_user():
             email="test@example.com",
             phone_number="1234567890",
             is_admin=False,
-            is_restricted=False,
+            is_restricted=True,
 
         )
 
@@ -452,4 +455,40 @@ class AdminService_Should(unittest.TestCase):
 
         self.assertEqual(400, context.exception.status_code)
         self.assertEqual("Cannot denied non pending transactions", context.exception.detail)
+        db.commit.assert_not_called()
+
+    @patch('app.api.routes.admin.service.confirmed_email_sender')
+    def test_confirmUser_success(self, mock_email_sender):
+        # Arrange
+        mock_email_sender.return_value = True
+        db = fake_db( )
+        db.query = Mock( )
+        db.commit = Mock( )
+        user = fake_user( )
+        account = fake_account( )
+        db.query(User).filter_by( ).first.side_effect = [user, account]
+        db.query(Account).filter_by( ).first.return_value = account
+
+        # Act
+        confirm_user(id=1, db=db)
+
+        # Assert
+        self.assertEqual(0, user.is_restricted)
+        self.assertEqual(0, account.is_blocked)
+        db.commit.assert_called_once( )
+        mock_email_sender.assert_called_once_with(user)
+
+    def test_confirmUser_userNotFound(self):
+        # Arrange
+        db = fake_db( )
+        db.query = Mock( )
+        db.commit = Mock( )
+        db.query(User).filter_by( ).first.return_value = None
+
+        # Act & Assert
+        with self.assertRaises(HTTPException) as context:
+            confirm_user(id=1, db=db)
+
+        self.assertEqual(404, context.exception.status_code)
+        self.assertEqual("User with that id was not found", context.exception.detail)
         db.commit.assert_not_called()
