@@ -24,21 +24,19 @@ def fake_user():
 
 class CardRouter_Should(unittest.TestCase):
 
-
     @patch('app.api.routes.categories.router.create')
-    def test_createCardSuccess_returnsTheCorrectStatusCodeAndMsg_WhenSuccessful(
+    def test_createCategorySuccess_returnsTheCorrectStatusCodeAndMsg_WhenSuccessful(
         self,
-        mock_create
+        mock_create,
         ):
-        
         # Arrange
         mock_user = fake_user()
         mock_db = fake_db()
-        mock_category = fake_category()
-        # mock_category.name = "Utilities"
 
+        mock_category = fake_category()
+        mock_create.return_value = mock_category
         # Act
-        response = create_category(mock_user, mock_db)
+        response = create_category(mock_category, mock_user, mock_db)
 
         # Assert
         self.assertIsInstance(response, JSONResponse)
@@ -47,4 +45,6 @@ class CardRouter_Should(unittest.TestCase):
         self.assertEqual(response_body,
                          {'message': f"{mock_category.name} category is created successfully"}
                          )
-        mock_create.assert_called_once_with(mock_user, mock_db)
+        mock_create.assert_called_once_with(mock_category, mock_db)
+
+
