@@ -7,10 +7,10 @@ from ...auth_service import auth
 from .schemas import CreateCategoryDTO
 from fastapi.responses import JSONResponse, Response
 from app.api.utils.responses import BadRequest
-from .service import create, get_categories
+from .service import create, get_categories, generate_report
 
 
-category_router = APIRouter(prefix="/categories", tags=["Category"])
+category_router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
 @category_router.post("/")
@@ -30,7 +30,7 @@ def create_category(
 
 
 @category_router.get("/list")
-def get_categories_list(
+def get_user_categories(
     current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
     db: Session = Depends(get_db)
 ):
@@ -51,3 +51,17 @@ def get_categories_list(
                 "categories": categories_list
             }
         )
+    
+@category_router.get("/report")
+def create_user_report(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db)
+    ):
+    generated_report = generate_report(current_user,db)
+
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "message": f"Your expenses are summarised in the following report."
+        }
+    )
