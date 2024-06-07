@@ -38,7 +38,7 @@ class User(Base):
     fullname: Mapped[str] = mapped_column(String(length=30), nullable=False)
     photo_path: Mapped[str] = mapped_column(String(length=300), nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_restricted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_restricted: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     contacts_as_user = relationship(
         "Contact", foreign_keys="[Contact.user_username]", back_populates="user"
@@ -86,7 +86,7 @@ class Account(Base):
     balance: Mapped[Decimal] = mapped_column(
         DECIMAL(10, 2), default=0.00, nullable=False
     )
-    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=True)
 
     accounts_cards = relationship(
         "Card", foreign_keys="[Card.account_id]", back_populates="cards_accounts"

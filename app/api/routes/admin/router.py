@@ -32,7 +32,7 @@ def search_users(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_r
 
 @admin_router.put("/status")
 def change_status(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
-                    username: Optional[str] = Body(None, description="Username to delete"),
+                    username: str = Body(description="Username to delete"),
                     db: Session = Depends(get_db)):
     if not service.check_is_admin(current_user.id, db):
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -66,12 +66,28 @@ def view_transactions(current_user: Annotated[UserViewDTO, Depends(auth.get_user
 
 @admin_router.put("/deny/transactions")
 def deny_transaction(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
-                     transaction_id: Optional[int] = Query(None, description="Transaction ID"),
+                     transaction_id: int = Query(description="Transaction ID"),
                      db: Session = Depends(get_db)):
     if not service.check_is_admin(current_user.id, db):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     service.deny_transaction(transaction_id, db)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content="")
+
+
+@admin_router.put("/confirm/users")
+def confirm_user(current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+                     user_id: int = Query(description="user ID"),
+                     db: Session = Depends(get_db)):
+    if not service.check_is_admin(current_user.id, db):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    service.confirm_user(user_id, db)
+    return JSONResponse(status_code=200, content="Granted access to user")
+
+
+
+
+
 
 

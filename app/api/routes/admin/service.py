@@ -1,11 +1,37 @@
 from enum import Enum
 from fastapi import HTTPException, Depends
+from mailjet_rest import Client
 from sqlalchemy.orm import Session
-
 from app.api.routes.admin.schemas import TransactionViewDTO
 from app.api.routes.users.schemas import UserFromSearchDTO
 from app.core.db_dependency import get_db
 from app.core.models import User, Account, Transaction
+
+
+def confirmed_email_sender(user):
+    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
+    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
+    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin"
+                },
+                "To": [
+                    {
+                        "Email": f"{user.email}",
+                        "Name": f"{user.fullname}"
+                    }
+                ],
+                "Subject": f"Confirmed Registration",
+                "HTMLPart": f"<h3>Your Registration is complete, now you can freely use the app</h3><br />May the delivery force be with you!",
+                "CustomID": f"UserID: {user.id}"
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
 
 class FlaggedOption(str, Enum):
     yes = "yes"
@@ -121,6 +147,14 @@ def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Cannot denied non pending transactions")
 
     transaction.status = "denied"
-
-
     db.commit()
+
+def confirm_user(id, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User with that id was not found")
+    user.is_restricted = 0
+    account = db.query(Account).filter_by(username=user.username).first()
+    account.is_blocked = 0
+    db.commit()
+    confirmed_email_sender(user)
