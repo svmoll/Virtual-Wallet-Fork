@@ -303,6 +303,6 @@ class Category(Base):
     __tablename__ = "categories"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(length=30), nullable=False)
-    color_hex: Mapped[str] = mapped_column(String(length=7), nullable=False)
+    color_hex: Mapped[str] = mapped_column(String(length=7), nullable=True)
 
     categories_transactions = relationship("Transaction", backref="categories")

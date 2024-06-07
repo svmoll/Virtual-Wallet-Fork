@@ -1,12 +1,13 @@
-from .schemas import CategoryDTO
+from .schemas import CreateCategoryDTO
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import select, join, distinct
 from app.core.models import Category, Transaction
 from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-from app.api.utils.responses import BadRequest
+from app.api.utils.responses import DatabaseError, BadRequest
 import logging
 
-def create(category: CategoryDTO, db: Session):
+def create(category: CreateCategoryDTO, db: Session):
     
     try:
         if category_exists(category, db):
@@ -15,10 +16,8 @@ def create(category: CategoryDTO, db: Session):
                 detail="Category already exists. Please use the existing one or try a different name."
                 )
         else:
-            category = CategoryDTO(
-                id=category.id,
-                name=category.name, 
-                color_hex=category.color_hex
+            category = Category(
+                name=category.name
                 )
             
             db.add(category)
@@ -35,12 +34,29 @@ def create(category: CategoryDTO, db: Session):
 
 
 def category_exists(category, db):
-    category = db.query(Category).filter(Category.name == category.name).first()
+    query = select(Category).filter(Category.name == category.name)
+    category = db.execute(query).fetchone() 
     return True if category else False
 
 def get_categories(user,db):
-    # user_categories = db.query(Transaction).filter_by(Transaction.sender_account == user.username).all()
-    # # select distinct category_id 
-    # # where transaction.sender_account == user.username
-    pass
-    
+    try:
+        user_categories = db.execute(
+                            select(Category)
+                            .join(Transaction, Transaction.category_id == Category.id)
+                            .filter(Transaction.sender_account == user.username)
+                            .distinct()
+                            ).scalars().all()
+        print(user_categories)
+
+        user_categories = [
+            {
+                "category_id": category.id,
+                "category_name": category.name
+            }
+            for category in user_categories
+        ]
+        return user_categories
+    except DatabaseError as e:
+    # except SQLAlchemyError as e:
+        logging.error(f"Database error occurred: {e}")
+        return []

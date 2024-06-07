@@ -3,11 +3,11 @@ from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
 from ..users.schemas import UserViewDTO
 from app.core.models import Card, User
-from jose import jwt
+from app.api.utils.responses import DatabaseError
 from datetime import timedelta, date
+from jose import jwt
 import random
 import string
-
 
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7"
@@ -91,10 +91,6 @@ def delete(id:int, db: Session):
 
 def get_view(current_user: UserViewDTO, db: Session):
     cards_list = db.query(Card).filter(Card.account_id==current_user.id).all()
-    
-    #Helper; only to see what happens in terminal
-    for i in cards_list:
-        print(i)
 
     cards_list = [{
             "card_number": card.card_number,
@@ -103,7 +99,6 @@ def get_view(current_user: UserViewDTO, db: Session):
             } for card in cards_list]
 
     return cards_list
-
 
 
 
