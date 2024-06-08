@@ -1,9 +1,7 @@
 import unittest
-from unittest.mock import patch, Mock, call 
+from unittest.mock import patch, Mock 
 from app.core.models import Category
 from app.api.routes.users.schemas import UserViewDTO
-from app.api.routes.categories.schemas import CreateCategoryDTO
-from datetime import timedelta, date
 from fastapi import HTTPException
 from app.api.utils.responses import DatabaseError
 from app.api.routes.categories.service import (

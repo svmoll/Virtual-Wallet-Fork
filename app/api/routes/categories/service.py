@@ -1,14 +1,10 @@
 from .schemas import CreateCategoryDTO
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy import select, func
+from sqlalchemy import select
 from app.core.models import Category, Transaction
 from fastapi import HTTPException
-from app.api.utils.responses import DatabaseError, BadRequest
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-import pandas as pd
+from app.api.utils.responses import DatabaseError
 import logging
 
 
@@ -69,7 +65,6 @@ def get_categories(user,db):
         ]
         return user_categories
     except DatabaseError as e:
-    # except SQLAlchemyError as e:
         logging.error(f"Database error occurred: {e}")
         return []
     

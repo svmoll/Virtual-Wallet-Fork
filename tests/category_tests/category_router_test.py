@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock
 from fastapi.responses import JSONResponse
 from app.api.routes.users.schemas import UserViewDTO
 from app.core.models import Category
-from app.api.routes.categories.router import create_category, get_categories_list
+from app.api.routes.categories.router import create_category, get_user_categories
 import json
 
 def fake_category():
@@ -69,7 +69,7 @@ class CategoriesRouter_Should(unittest.TestCase):
         mock_get_categories.return_value = mock_category
 
         # Act
-        response = get_categories_list(mock_user, mock_db)
+        response = get_user_categories(mock_user, mock_db)
 
         # Assert
         self.assertIsInstance(response, JSONResponse)
@@ -94,7 +94,7 @@ class CategoriesRouter_Should(unittest.TestCase):
         mock_get_categories.return_value = None
 
         # Act
-        response = get_categories_list(mock_user, mock_db)
+        response = get_user_categories(mock_user, mock_db)
 
         # Assert
         self.assertIsInstance(response, JSONResponse)
