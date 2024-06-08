@@ -8,6 +8,8 @@ from .schemas import CreateCategoryDTO
 from fastapi.responses import JSONResponse, Response
 from app.api.utils.responses import BadRequest
 from .service import create, get_categories, generate_report
+from datetime import date
+import logging
 
 
 category_router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -56,15 +58,25 @@ def get_user_categories(
 @category_router.get("/report")
 def create_user_report(
     current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    from_date: date = '2024-01-01',
+    to_date: date = '2024-07-01'
     ):
-    generated_report = generate_report(current_user,db)
-    print(f'generated report: {generated_report}')
+    generated_report = generate_report(current_user, db, from_date, to_date)
     
-    if not generated_report.empty:
+    logging.info(f'Generated report: {generated_report}')
+    
+    if generated_report:
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
                 "message": f"Your expenses are summarised in the graph."
             }
         )
+    # else:
+    #     return JSONResponse(
+    #         status_code=status.HTTP_204_NO_CONTENT,
+    #         content={
+    #             "message": f"Report could not be generated."
+    #         }
+    #     )

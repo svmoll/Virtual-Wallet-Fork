@@ -75,69 +75,77 @@ def get_categories(user,db):
 
 def generate_report(
     current_user,
-    db: Session
+    db: Session,
+    from_date, 
+    to_date, 
     ):
+    try:
         query = (
             select(Category.name, func.sum(Transaction.amount))
             .join(Transaction, Transaction.category_id == Category.id)
             .filter(Transaction.sender_account == current_user.username and 
-                    Transaction.transaction_date >= '2024-01-01', Transaction.transaction_date <= '2024-07-01')
+                    # Transaction.transaction_date >= '2024-01-01', Transaction.transaction_date <= '2024-07-01')
+                    Transaction.transaction_date >= from_date, Transaction.transaction_date <= to_date)
             .group_by(Category.name)
             )
-        
         results = db.execute(query).fetchall()
-        report_data = visualise_report(results, db)
+        logging.info(f'DB query results:{results}')
+        report_data = data_prep(results, db)
+        
         return report_data
+    except Exception as e:
+        # Handle exceptions
+        logging.error(f"Error occurred: {e}")
+        return None
 
-def visualise_report(results, db):
+
+def data_prep(results,db):
+    columns = [(category, float(amount)) for category, amount in results]
+    category_names, amounts = zip(*columns)
+    percentages = [amount / sum(amounts) * 100 for amount in amounts]
+    return visualise_report(category_names, amounts, percentages, db)
+
+
+def visualise_report(category_names, amounts, percentages, db):
     try:
-        category_names, amounts = zip(*results)
-        print(f'results:{results}')
-        # category_names = [row[0] for row in results]
-        # total_amounts = [float(row[1]) for row in results]
-        float_amounts = [float(amount) for amount in amounts]
-        total_sum = sum(float_amounts)
-        percentages = [amount / total_sum * 100 for amount in float_amounts]
-
         def autopct_format(pct):
-            amount = int(pct / 100. * total_sum)
+            amount = (pct / 100. * sum(amounts))
             return f'{pct:.1f}%\n${amount:.0f}'
 
-        my_explode = [0.05] * len(results)
+        my_explode = [0.05] * len(category_names)
 
         plt.figure(figsize=(8, 8))
-        _,_,autotexts = plt.pie(float_amounts, 
+        _,_,autotexts = plt.pie(amounts, 
                 labels=category_names, 
                 autopct=autopct_format,
                 startangle=140,
                 explode=my_explode
                 )
-
-        # Customize text properties
         for autotext in autotexts:
             autotext.set_fontsize(12)
             autotext.set_color('white')
 
-        plt.title('Expenses by Category')
+        plt.title(f'Expenses by Category')
         plt.axis('equal')
         plt.tight_layout()
 
-        plt.savefig('transaction_report_pie1.png')
+        plt.savefig('user_report_pie.png') #Where to save it?
+        logging.info("Plot is saved successfully as 'user_report_pie.png'")
         plt.show()
         # plt.close()
 
-        report_data = pd.DataFrame({
-            'Category': category_names,
-            'Total Amount': float_amounts,
-            'Percentage': percentages
-        })
+        report_data = category_names, amounts, percentages
+
+        try:
+            db.close()
+            logging.info("Database connection closed successfully.")
+        except Exception as e:
+            logging.error(f"Error closing database connection: {e}")
+            #create a test to ensure it is closed
         return report_data 
-    
+
     except Exception as e:
         # Handle exceptions
-        print(f"Error occurred: {e}")
+        logging.error(f"Error occurred: {e}")
         return None
     
-    finally:
-        db.close()
-        #create a test to ensure it is closed
