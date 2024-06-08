@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from ..users.schemas import UserViewDTO
 from ...auth_service import auth
 from .schemas import CreateCategoryDTO
-from fastapi.responses import JSONResponse
-from .service import create, get_categories
+from fastapi.responses import JSONResponse, Response
+from app.api.utils.responses import BadRequest
+from .service import create, get_categories, generate_report
 
 
 category_router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -51,3 +52,19 @@ def get_user_categories(
             }
         )
     
+
+@category_router.get("/report")
+def create_user_report(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db)
+    ):
+    generated_report = generate_report(current_user,db)
+    print(f'generated report: {generated_report}')
+    
+    if not generated_report.empty:
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": f"Your expenses are summarised in the graph."
+            }
+        )
