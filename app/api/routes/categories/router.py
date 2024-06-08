@@ -7,7 +7,7 @@ from ...auth_service import auth
 from .schemas import CreateCategoryDTO
 from fastapi.responses import JSONResponse, Response
 from app.api.utils.responses import BadRequest
-from .service import create, get_categories, generate_report
+from .service import create, get_categories
 
 
 category_router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -52,16 +52,3 @@ def get_user_categories(
             }
         )
     
-@category_router.get("/report")
-def create_user_report(
-    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
-    db: Session = Depends(get_db)
-    ):
-    generated_report = generate_report(current_user,db)
-
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content={
-            "message": f"Your expenses are summarised in the following report."
-        }
-    )
