@@ -7,6 +7,30 @@ from app.api.routes.users.schemas import UserFromSearchDTO
 from app.core.db_dependency import get_db
 from app.core.models import User, Account, Transaction
 
+def deny_email_sender(user, transaction):
+    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
+    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
+    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin"
+                },
+                "To": [
+                    {
+                        "Email": f"{user.email}",
+                        "Name": f"{user.fullname}"
+                    }
+                ],
+                "Subject": f"Denied Transaction",
+                "HTMLPart": f"<h3>Your transaction with ID:{transaction.id} was denied</h3>",
+                "CustomID": f"UserID: {user.id}"
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
 
 def confirmed_email_sender(user):
     api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
@@ -141,6 +165,7 @@ def view_transactions(sender, receiver, status,flagged, sort, page, limit, db: S
 
 def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
     transaction = db.query(Transaction).filter_by(id=transaction_id).first()
+    user = db.query(User).filter_by(username=transaction.sender_account).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction with that id was not found")
     if transaction.status != "pending":
@@ -148,6 +173,7 @@ def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
 
     transaction.status = "denied"
     db.commit()
+    deny_email_sender(user, transaction)
 
 def confirm_user(id, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(id=id).first()
