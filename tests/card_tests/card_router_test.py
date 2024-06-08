@@ -102,6 +102,7 @@ class CardRouter_Should(unittest.TestCase):
         # Arrange
         mock_user = fake_user()
         mock_db = fake_db()
+        
         mock_created_card = fake_card_json()
         mock_get_view.return_value = mock_created_card
 
@@ -118,36 +119,6 @@ class CardRouter_Should(unittest.TestCase):
                                 }
         self.assertEqual(response_body, expected_response_body)
         mock_get_view.assert_called_once_with(mock_user, mock_db)
-
-
-    # @patch('app.api.routes.cards.router.get_view')
-    # def 2test_getCards_returnsTheCorrectStatusCodeMsgCardList_WhenUserHasCards(self, mock_get_view):
-    #     # Arrange
-    #     mock_user = fake_user()
-    #     # mock_user.username = 'test_user'
-    #     mock_db = fake_db()
-        
-    #     mock_cards = [
-    #         {
-    #             "card_number": "1234-5678-8765-4321",
-    #             "expiration_date": "2025-12-31",
-    #             "cvv": "123"
-    #         }
-    #     ]
-    #     mock_get_view.return_value = mock_cards
-
-    #     # Act
-    #     response = view_cards(mock_user, mock_db)
-
-    #     # Assert
-    #     self.assertIsInstance(response, JSONResponse)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     expected_content = {
-    #         "message": "The following cards are associated with username: test_user.",
-    #         "cards": mock_cards
-    #     }
-    #     response_body = json.loads(response.body.decode('utf-8'))
-    #     self.assertEqual(response_body, expected_content)
 
 
     @patch("app.api.routes.cards.router.delete")
