@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
 
-class CategoryDTO(BaseModel):
-    id: int | None = None
+class CreateCategoryDTO(BaseModel):
     name: str
-    color_hex: str
