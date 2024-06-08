@@ -165,7 +165,6 @@ def view_transactions(sender, receiver, status,flagged, sort, page, limit, db: S
 
 def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
     transaction = db.query(Transaction).filter_by(id=transaction_id).first()
-    user = db.query(User).filter_by(username=transaction.sender_account).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction with that id was not found")
     if transaction.status != "pending":
@@ -173,6 +172,7 @@ def deny_transaction(transaction_id: int, db: Session = Depends(get_db)):
 
     transaction.status = "denied"
     db.commit()
+    user = db.query(User).filter_by(username=transaction.sender_account).first()
     deny_email_sender(user, transaction)
 
 def confirm_user(id, db: Session = Depends(get_db)):
