@@ -414,5 +414,6 @@ Confirms a user's access.
 
 ## File Architecture
 
+![Screenshot_20240609_013416](https://github.com/K-I-S/Virtual-Wallet/assets/155480916/da6389d9-a8f0-4b18-bb01-a7c9b3abdb59)
 
 ## Database Architecture
