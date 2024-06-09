@@ -1,3 +1,4 @@
+import pytz
 from decimal import Decimal
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
@@ -17,7 +18,8 @@ class RecurringTransactionDTO(TransactionDTO):
     ]
     custom_days: Optional[int] = Field(None, description="Custom interval in days")
     start_date: Optional[date] = Field(
-        None, description="Start date for the recurring transaction"
+        default_factory=lambda: datetime.now(pytz.utc),
+        description="Start date for the recurring transaction",
     )
 
 
