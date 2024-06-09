@@ -13,6 +13,7 @@ from .service import (
     accept_incoming_transaction,
     decline_incoming_transaction,
     create_recurring_transaction,
+    cancelling_recurring_transaction,
 )
 
 # from . import service
@@ -128,3 +129,19 @@ async def make_recurring_transaction(
     return create_recurring_transaction(
         current_user.username, recurring_transaction, db, scheduler
     )
+
+
+@transaction_router.delete("/recurring_transactions/")
+async def cancel_recurring_transaction(
+    request: Request,
+    recurring_transaction_id: int,
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db),
+):
+    scheduler = request.app.state.scheduler
+
+    cancelling_recurring_transaction(
+        recurring_transaction_id, current_user.username, db, scheduler
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
