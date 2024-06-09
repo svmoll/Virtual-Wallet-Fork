@@ -1,8 +1,8 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from fastapi.responses import JSONResponse, Response
 from app.core.db_dependency import get_db
-from .schemas import TransactionDTO
+from .schemas import TransactionDTO, RecurringTransactionDTO
 from sqlalchemy.orm import Session
 
 from .service import (
@@ -12,6 +12,7 @@ from .service import (
     delete_draft,
     accept_incoming_transaction,
     decline_incoming_transaction,
+    create_recurring_transaction,
 )
 
 # from . import service
@@ -113,3 +114,17 @@ def decline_transaction(
     decline_incoming_transaction(current_user.username, transaction_id, db)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@transaction_router.post("/recurring_transactions/")
+async def make_recurring_transaction(
+    request: Request,
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    recurring_transaction: RecurringTransactionDTO,
+    db: Session = Depends(get_db),
+):
+    scheduler = request.app.state.scheduler
+
+    return create_recurring_transaction(
+        current_user.username, recurring_transaction, db, scheduler
+    )

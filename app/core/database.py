@@ -1,6 +1,6 @@
 # Connection to the database
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 import mariadb  # for reqs file
 import pymysql  # for reqs file
@@ -31,3 +31,4 @@ connectionString = f"mariadb+pymysql://{db_username}:{db_password}@{db_url}/{db_
 # SQLAlchemy setup
 engine = create_engine(connectionString, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+metadata = MetaData()

@@ -1,41 +1,45 @@
-from datetime import datetime
+from datetime import datetime, date, time
 import pytz
 from decimal import Decimal
 from mailjet_rest import Client
-from .schemas import TransactionDTO
+import logging
+from app.core.database import SessionLocal
+from decimal import Decimal
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import desc, select, Table
+from .schemas import TransactionDTO, RecurringTransactionDTO, RecurringTransactionView
 from ...utils.responses import DatabaseError, InsufficientFundsError
 from sqlalchemy.orm import Session
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
-from app.core.models import Account, Transaction, User
+from app.core.models import Transaction, User, RecurringTransaction, Account
 from ..accounts.service import get_account_by_username
 from app.core.db_dependency import get_db
+from app.core.database import engine, metadata
 
 
 def decline_email_sender(user, transaction):
-    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
-    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
-    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    api_key = "cdcb4ffb9ac758e8750f5cf5bf07ac9f"
+    api_secret = "8ec6183bbee615d0d62b2c72bee814c4"
+    mailjet = Client(auth=(api_key, api_secret), version="v3.1")
     data = {
-        'Messages': [
+        "Messages": [
             {
                 "From": {
                     "Email": "kis.team.telerik@gmail.com",
-                    "Name": "MyPyWallet Admin"
+                    "Name": "MyPyWallet Admin",
                 },
-                "To": [
-                    {
-                        "Email": f"{user.email}",
-                        "Name": f"{user.fullname}"
-                    }
-                ],
+                "To": [{"Email": f"{user.email}", "Name": f"{user.fullname}"}],
                 "Subject": f"Declined Transaction",
                 "HTMLPart": f"<h3>Your transaction with ID:{transaction.id} was declined by the receiver</h3>",
-                "CustomID": f"UserID: {user.id}"
+                "CustomID": f"UserID: {user.id}",
             }
         ]
     }
     mailjet.send.create(data=data)
+
 
 def create_draft_transaction(
     sender_account: str, transaction: TransactionDTO, db: Session
@@ -172,10 +176,125 @@ def decline_incoming_transaction(
     sender_account.balance += incoming_transaction.amount
     incoming_transaction.status = "declined"
     incoming_transaction.transaction_date = datetime.now(pytz.utc)
-    sender = db.query(User).filter(User.username==incoming_transaction.sender_account).first()
+    sender = (
+        db.query(User)
+        .filter(User.username == incoming_transaction.sender_account)
+        .first()
+    )
     decline_email_sender(sender, incoming_transaction)
     db.commit()
 
+
+def create_recurring_transaction(
+    sender_account: str,
+    recurring_transaction: RecurringTransactionDTO,
+    db: Session,
+    scheduler: AsyncIOScheduler,
+):
+    try:
+        custom_days = recurring_transaction.custom_days
+        start_date = recurring_transaction.start_date
+        start_datetime = datetime.combine(start_date, time.min)
+        recurring_interval = recurring_transaction.recurring_interval
+
+        if custom_days is not None:
+            str_recurring_interval = f"{custom_days} days"
+        else:
+            str_recurring_interval = recurring_interval
+
+        recurring_transaction = RecurringTransaction(
+            sender_account=sender_account,
+            receiver_account=recurring_transaction.receiver_account,
+            amount=recurring_transaction.amount,
+            category_id=recurring_transaction.category_id,
+            description=recurring_transaction.description,
+            recurring_interval=str_recurring_interval,
+            status="ongoing",
+        )
+
+        db.add(recurring_transaction)
+        db.commit()
+        db.refresh(recurring_transaction)
+
+        job_id = f"recurring_transaction_{recurring_transaction.id}"
+        trigger = get_trigger(recurring_interval, custom_days)
+        scheduler.add_job(
+            process_recurring_transaction,
+            trigger,
+            args=[
+                sender_account,
+                recurring_transaction.receiver_account,
+                recurring_transaction.amount,
+                recurring_transaction.category_id,
+                recurring_transaction.description,
+            ],
+            id=job_id,
+            start_date=start_datetime,
+        )
+
+        recurring_transaction.job_id = job_id
+        db.commit()
+
+        return recurring_transaction
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logging.error(f"Database error occurred: {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logging.error(f"An unexpected error occurred: {e}")
+        raise
+    finally:
+        db.close()
+
+
+async def process_recurring_transaction(
+    sender_account: str,
+    receiver_account: str,
+    amount: Decimal,
+    category_id: int,
+    description: str,
+    db: Session = SessionLocal(),
+):
+    try:
+        sender = db.query(Account).filter(Account.username == sender_account).first()
+
+        receiver = (
+            db.query(Account).filter(Account.username == receiver_account).first()
+        )
+
+        if sender.balance >= amount:
+            sender.balance -= amount
+            receiver.balance += amount
+            transaction = Transaction(
+                sender_account=sender_account,
+                receiver_account=receiver_account,
+                amount=amount,
+                category_id=category_id,
+                description=description,
+                status="completed",
+                transaction_date=datetime.now(pytz.utc),
+            )
+            db.add(transaction)
+            db.commit()
+        else:
+            logging.info(
+                f"The account of {sender_account} does not have sufficient funds."
+            )
+            raise InsufficientFundsError()
+
+    except (ValueError, InsufficientFundsError) as e:
+        logging.error(f"Transaction failed: {e}")
+        db.rollback()
+    except SQLAlchemyError as e:
+        logging.error(f"Database error occurred: {e}")
+        db.rollback()
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 # Helper Functions
@@ -215,3 +334,34 @@ def get_incoming_transaction_by_id(
         raise HTTPException(status_code=404, detail="Transaction not found!")
 
     return incoming_transaction
+
+
+def get_recurring_transaction_by_id(
+    recurring_transaction_id: int, sender_account: str, db: Session = Depends(get_db)
+) -> RecurringTransaction:
+    recurring_transaction = (
+        db.query(RecurringTransaction)
+        .filter(
+            RecurringTransaction.id == recurring_transaction_id,
+            RecurringTransaction.sender_account == sender_account,
+            RecurringTransaction.status == "ongoing",
+        )
+        .first()
+    )
+
+    if not recurring_transaction:
+        raise HTTPException(status_code=404, detail="Recurring transaction not found!")
+
+    return recurring_transaction
+
+
+def get_trigger(recurring_interval: str, custom_days: int = None):
+    interval_mapping = {
+        "daily": IntervalTrigger(days=1),
+        "weekly": IntervalTrigger(weeks=1),
+        "monthly": CronTrigger(day=1),
+        "yearly": CronTrigger(year="*"),
+        "custom": IntervalTrigger(days=custom_days) if custom_days else None,
+        "minute": IntervalTrigger(seconds=60),
+    }
+    return interval_mapping.get(recurring_interval)
