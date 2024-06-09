@@ -10,3 +10,6 @@ SQLAlchemy==2.0.30
 starlette==0.37.2
 uvicorn==0.30.0
 mailjet_rest==1.3.4
+matplotlib==3.9.0
+# Jupyter Notebook
+notebook==7.2.1 
