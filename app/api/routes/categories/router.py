@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 from ..users.schemas import UserViewDTO
 from ...auth_service import auth
 from .schemas import CreateCategoryDTO
-from fastapi.responses import JSONResponse, Response
-from app.api.utils.responses import BadRequest
+from fastapi.responses import JSONResponse
 from .service import create, get_categories, generate_report
 from datetime import date
 import logging

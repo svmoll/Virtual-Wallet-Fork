@@ -12,7 +12,6 @@ from app.api.utils.responses import (
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import pandas as pd
 import logging
 
 
