@@ -24,7 +24,7 @@ def initialize_special_accounts(db: Session):
         db.add(cash_account)
         db.commit()
 
-    admin = db.query(Account).filter_by(username="admin").first()
+    admin = db.query(User).filter_by(username="admin").first()
     if not admin:
         admin = User(
             username="admin",
