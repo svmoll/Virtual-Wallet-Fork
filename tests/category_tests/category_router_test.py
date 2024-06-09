@@ -3,7 +3,11 @@ from unittest.mock import patch, Mock
 from fastapi.responses import JSONResponse
 from app.api.routes.users.schemas import UserViewDTO
 from app.core.models import Category
-from app.api.routes.categories.router import create_category, get_user_categories
+from app.api.routes.categories.router import (
+                                            create_category, 
+                                            get_user_categories,
+                                            create_user_report
+                                            )
 import json
 
 def fake_category():
@@ -12,6 +16,7 @@ def fake_category():
     name="Utilities",
     color_hex=None
     )
+
 
 def fake_category_json():
     return [
@@ -24,6 +29,7 @@ def fake_category_json():
 
 def fake_db():
     return Mock()   
+
 
 def fake_user():
     return UserViewDTO(
@@ -104,3 +110,53 @@ class CategoriesRouter_Should(unittest.TestCase):
                     "message": f"There are no associated categories with your username: {mock_user.username}."
                 },)
         mock_get_categories.assert_called_once_with(mock_user, mock_db)
+
+
+    @patch('app.api.routes.categories.router.generate_report')
+    def test_createUserCategoryReport_returnsTheCorrectStatusCodeAndMsg_WhenSuccessful(
+        self,
+        mock_generate_report,
+        ):
+        # Arrange
+        mock_user = fake_user()
+        mock_db = fake_db()
+
+        mock_generate_report.return_value = not None
+        from_date = '2024-01-01'
+        to_date = '2024-07-01'
+        # Act
+        response = create_user_report(from_date,to_date,mock_user, mock_db)
+
+        # Assert
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, 201)
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body,
+                         {'message': f"Your expenses are summarised in the graph."}
+                         )
+        mock_generate_report.assert_called_once_with(from_date,to_date,mock_user, mock_db)
+
+
+    @patch('app.api.routes.categories.router.generate_report')
+    def test_createUserCategoryReport_returnsTheCorrectStatusCodeAndMsg_WhenSuccessful(
+        self,
+        mock_generate_report,
+        ):
+        # Arrange
+        mock_user = fake_user()
+        mock_db = fake_db()
+
+        mock_generate_report.return_value = None
+        from_date = '2024-01-01'
+        to_date = '2024-07-01'
+        # Act
+        response = create_user_report(from_date,to_date,mock_user, mock_db)
+
+        # Assert
+        self.assertIsInstance(response, JSONResponse)
+        self.assertEqual(response.status_code, 204)
+        response_body = json.loads(response.body.decode('utf-8'))
+        self.assertEqual(response_body,
+                         {'message': f"Report could not be generated."}
+                         )
+        mock_generate_report.assert_called_once_with(from_date,to_date,mock_user, mock_db)

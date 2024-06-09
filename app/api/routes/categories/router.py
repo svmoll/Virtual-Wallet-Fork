@@ -63,7 +63,7 @@ def create_user_report(
     to_date: date = '2024-07-01'
     ):
     generated_report = generate_report(current_user, db, from_date, to_date)
-    
+    print(generated_report)
     logging.info(f'Generated report: {generated_report}')
     
     if generated_report:
@@ -73,10 +73,10 @@ def create_user_report(
                 "message": f"Your expenses are summarised in the graph."
             }
         )
-    # else:
-    #     return JSONResponse(
-    #         status_code=status.HTTP_204_NO_CONTENT,
-    #         content={
-    #             "message": f"Report could not be generated."
-    #         }
-    #     )
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_204_NO_CONTENT,
+            content={
+                "message": f"Report could not be generated."
+            }
+        )
