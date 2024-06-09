@@ -3,7 +3,7 @@ import pytz
 from decimal import Decimal
 from mailjet_rest import Client
 import logging
-from core.database import SessionLocal
+from app.core.database import SessionLocal
 from decimal import Decimal
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -14,10 +14,10 @@ from sqlalchemy.orm import Session
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
-from core.models import Transaction, User, RecurringTransaction, Account
+from app.core.models import Transaction, User, RecurringTransaction, Account
 from ..accounts.service import get_account_by_username
-from core.db_dependency import get_db
-from core.database import engine, metadata
+from app.core.db_dependency import get_db
+from app.core.database import engine, metadata
 
 
 def decline_email_sender(user, transaction):
