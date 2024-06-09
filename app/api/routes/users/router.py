@@ -69,14 +69,8 @@ def view(
 
 @user_router.put("/update")
 def update(
+    update_info: UpdateUserDTO,
     current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
-    update_info: UpdateUserDTO = Body(..., example={
-          "password": "Password!1",
-          "email": "Newmail@example.com",
-          "phone_number": "0000000001",
-          "photo": "photo_path",
-          "fullname": "New Name"
-        }),
     db: Session = Depends(get_db),
 ):
     updated_user = service.update_user(current_user.id, update_info, db)
