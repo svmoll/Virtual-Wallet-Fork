@@ -20,7 +20,13 @@ class Token(BaseModel):
 
 
 @user_router.post("/register")
-async def register_user(user: UserDTO, db: Session = Depends(get_db)):
+async def register_user(user: UserDTO  = Body(..., example={
+        "username": "johndoe",
+        "password": "Password1!!",
+        "email": "johndoe@example.com",
+        "phone_number": "5555555555",
+        "fullname": "John Doe"
+    }), db: Session = Depends(get_db)):
     created_user = service.create(user, db)
 
     return f"User {created_user.username} created successfully."
