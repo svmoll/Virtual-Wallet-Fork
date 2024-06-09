@@ -21,6 +21,7 @@ from app.api.routes.transactions.service import (
     confirm_draft_transaction,
     create_recurring_transaction,
     process_recurring_transaction,
+    cancelling_recurring_transaction,
 )
 
 
@@ -483,6 +484,31 @@ class TransactionsServiceShould(unittest.TestCase):
         db.rollback.assert_called_once()
         logging_message = f"An unexpected error occurred: Mocked unexpected error"
         mock_logging_error.assert_called_once_with(logging_message)
+
+    @patch("app.api.routes.transactions.service.get_recurring_transaction_by_id")
+    def test_cancellingRecurringTransaction_returnsNone(
+        self, mock_get_recurring_transaction_by_id
+    ):
+        # Arrange
+        recurring_transaction_id = 1
+        sender_account = "sender"
+        db = MagicMock()
+        scheduler = MagicMock()
+        recurring_transaction = MagicMock()
+
+        mock_get_recurring_transaction_by_id.return_value = recurring_transaction
+
+        # Act
+        cancelling_recurring_transaction(
+            recurring_transaction_id, sender_account, db, scheduler
+        )
+
+        # Assert
+        scheduler.remove_job.assert_called_once_with(recurring_transaction.job_id)
+        self.assertEqual(recurring_transaction.status, "cancelled")
+        self.assertFalse(recurring_transaction.is_active)
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once_with(recurring_transaction)
 
 
 if __name__ == "__main__":
