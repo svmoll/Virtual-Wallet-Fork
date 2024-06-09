@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from .models import Account, User
+from .models import Account, User, Category
 
 
 def initialize_special_accounts(db: Session):
@@ -21,4 +21,18 @@ def initialize_special_accounts(db: Session):
 
         cash_account = Account(username="cash_withdrawal", balance=0, is_blocked=False)
         db.add(cash_account)
+        db.commit()
+
+
+def initialize_other_category(db: Session):
+    # Check if the 'Other' category exists
+    other_category = db.query(Category).filter_by(name="Other").first()
+    if not other_category:
+        # Create the 'Other' category if it doesn't exist
+        other = Category(
+            id=1,
+            name="Other",
+            color_hex=None,
+        )
+        db.add(other)
         db.commit()
