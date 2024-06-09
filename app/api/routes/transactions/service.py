@@ -1,15 +1,41 @@
 from datetime import datetime
 import pytz
 from decimal import Decimal
+from mailjet_rest import Client
 from .schemas import TransactionDTO
 from ...utils.responses import DatabaseError, InsufficientFundsError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
-from app.core.models import Account, Transaction
+from app.core.models import Account, Transaction, User
 from ..accounts.service import get_account_by_username
 from app.core.db_dependency import get_db
 
+
+def decline_email_sender(user, transaction):
+    api_key = 'cdcb4ffb9ac758e8750f5cf5bf07ac9f'
+    api_secret = '8ec6183bbee615d0d62b2c72bee814c4'
+    mailjet = Client(auth=(api_key, api_secret), version='v3.1')
+    data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin"
+                },
+                "To": [
+                    {
+                        "Email": f"{user.email}",
+                        "Name": f"{user.fullname}"
+                    }
+                ],
+                "Subject": f"Declined Transaction",
+                "HTMLPart": f"<h3>Your transaction with ID:{transaction.id} was declined by the receiver</h3>",
+                "CustomID": f"UserID: {user.id}"
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
 
 def create_draft_transaction(
     sender_account: str, transaction: TransactionDTO, db: Session
@@ -146,8 +172,10 @@ def decline_incoming_transaction(
     sender_account.balance += incoming_transaction.amount
     incoming_transaction.status = "declined"
     incoming_transaction.transaction_date = datetime.now(pytz.utc)
-
+    sender = db.query(User).filter(User.username==incoming_transaction.sender_account).first()
+    decline_email_sender(sender, incoming_transaction)
     db.commit()
+
 
 
 # Helper Functions

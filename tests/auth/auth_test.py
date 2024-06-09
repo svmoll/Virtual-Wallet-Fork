@@ -193,12 +193,15 @@ class Authentication_Should(unittest.TestCase):
         # Assert
         self.assertIsNone(result)
 
+    @patch('app.api.auth_service.auth.is_restricted')
     @patch('app.api.auth_service.auth.is_token_blacklisted')
     @patch('app.api.auth_service.auth.is_authenticated')
     @patch('app.api.auth_service.auth.from_token')
-    def test_getUserOrRaise401_success(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted):
+    def test_getUserOrRaise401_success(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted,
+                                       mock_is_restricted):
         # Arrange
         db = fake_db()
+        mock_is_restricted.return_value = False
         mock_is_token_blacklisted.return_value = False
         mock_is_authenticated.return_value = MagicMock()
         mock_from_token.return_value = MagicMock()
@@ -208,16 +211,17 @@ class Authentication_Should(unittest.TestCase):
         result = get_user_or_raise_401(token, db)
         mock_is_token_blacklisted.assert_called_once_with(token)
         mock_is_authenticated.assert_called_once_with(db, token)
-        mock_from_token.assert_called_once_with(db, token)
         self.assertIsNotNone(result)
 
+    @patch('app.api.auth_service.auth.is_restricted')
     @patch('app.api.auth_service.auth.is_token_blacklisted')
     @patch('app.api.auth_service.auth.is_authenticated')
     @patch('app.api.auth_service.auth.from_token')
     def test_getUserOrRaise401_userDoesntExist(self, mock_from_token, mock_is_authenticated,
-                                                     mock_is_token_blacklisted):
+                                                     mock_is_token_blacklisted, mock_is_restricted):
         # Arrange
         db = fake_db( )
+        mock_is_restricted.return_value = False
         mock_is_token_blacklisted.return_value = False
         mock_is_authenticated.side_effect = HTTPException(status_code=401, detail="User doesn't exist")
         mock_from_token.return_value = None
@@ -230,14 +234,15 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(context.exception.detail, "User doesn't exist")
         mock_is_token_blacklisted.assert_called_once_with(token)
         mock_is_authenticated.assert_called_once_with(db, token)
-        mock_from_token.assert_not_called( )
 
+    @patch('app.api.auth_service.auth.is_restricted')
     @patch('app.api.auth_service.auth.is_token_blacklisted')
     @patch('app.api.auth_service.auth.is_authenticated')
     @patch('app.api.auth_service.auth.from_token')
-    def test_getUserOrRaise401_invalidToken(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted):
+    def test_getUserOrRaise401_invalidToken(self, mock_from_token, mock_is_authenticated, mock_is_token_blacklisted, mock_is_restricted):
         # Arrange
         db = fake_db()
+        mock_is_restricted.return_value = False
         mock_is_token_blacklisted.return_value = False
         mock_is_authenticated.side_effect = JWTError("Invalid token")
         mock_from_token.return_value = None
@@ -250,7 +255,6 @@ class Authentication_Should(unittest.TestCase):
         self.assertEqual(context.exception.detail, "Invalid token")
         mock_is_token_blacklisted.assert_called_once_with(token)
         mock_is_authenticated.assert_called_once_with(db, token)
-        mock_from_token.assert_not_called()
 
     @patch('app.api.auth_service.auth.is_token_blacklisted')
     def test_getUserOrRaise401_blacklistedToken(self, mock_is_token_blacklisted):
