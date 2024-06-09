@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from .models import Account, User
+from ..api.auth_service.auth import hash_pass
 
 
 def initialize_special_accounts(db: Session):
@@ -21,4 +22,18 @@ def initialize_special_accounts(db: Session):
 
         cash_account = Account(username="cash_withdrawal", balance=0, is_blocked=False)
         db.add(cash_account)
+        db.commit()
+
+    admin = db.query(Account).filter_by(username="admin").first()
+    if not admin:
+        admin = User(
+            username="admin",
+            password=hash_pass("Admin1!!"),
+            email="kis.team.telerik@gmail.com",
+            phone_number="00000000000",
+            fullname="Admin",
+            is_admin=True,
+            is_restricted=False,
+        )
+        db.add(admin)
         db.commit()
