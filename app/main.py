@@ -4,7 +4,7 @@ from app.api.routes.home.router import home_router
 from app.core.database import engine
 from app.core.db_dependency import get_db
 from app.core import models
-from app.core.db_population import initialize_special_accounts
+from app.core.db_population import initialize_special_accounts, initialize_other_category
 from app.api.routes.categories.router import category_router
 from app.api.routes.users.router import user_router
 from app.api.routes.transactions.router import transaction_router
@@ -33,11 +33,12 @@ models.Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize special accounts during application startup
+    # Initialize special accounts and categories during application startup
     db_gen = get_db()
     db = next(db_gen)
     try:
         initialize_special_accounts(db)
+        initialize_other_category(db)
     finally:
         db_gen.close()
 

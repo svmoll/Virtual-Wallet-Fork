@@ -59,3 +59,24 @@ class InvalidAmountError(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+
+
+class CategoryExistsError(Exception):
+    def __init__(self, message="Category already exists. Please use the existing one or try a different name.", status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+
+class NoRelevantTransactionsError(Exception):
+    def __init__(self, message="There are no transactions in the relevant selected period.", status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+
+class GraphNotSavedError(Exception):
+    def __init__(self, message="Graph savefig failed.", status_code=500):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
