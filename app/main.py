@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.api.routes.home.router import home_router
-from app.core.database import engine
+from app.core.database import engine, connectionString
 from app.core.db_dependency import get_db
 from app.core import models
-from app.core.db_population import initialize_special_accounts, initialize_other_category
+from app.core.db_population import (
+    initialize_special_accounts,
+    initialize_other_category,
+)
 from app.api.routes.categories.router import category_router
 from app.api.routes.users.router import user_router
 from app.api.routes.transactions.router import transaction_router
@@ -13,6 +16,9 @@ from app.api.routes.accounts.router import account_router
 from app.api.routes.admin.router import admin_router
 import uvicorn
 import logging
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+import asyncio
 
 
 # Basic configuration
@@ -24,11 +30,15 @@ logging.basicConfig(
         # You can add more handlers here (e.g., logging to a file)
     ],
 )
-
 logger = logging.getLogger(__name__)  # Create a logger for this module
 
 
 models.Base.metadata.create_all(bind=engine)
+
+scheduler = AsyncIOScheduler()
+scheduler.add_jobstore(SQLAlchemyJobStore(url=connectionString), "default")
+
+scheduler.start()
 
 
 @asynccontextmanager
@@ -43,6 +53,8 @@ async def lifespan(app: FastAPI):
         db_gen.close()
 
     yield  # Control is passed to the application
+
+    scheduler.shutdown()
 
     # Shutdown logic if needed
     # No specific shutdown logic in this case
