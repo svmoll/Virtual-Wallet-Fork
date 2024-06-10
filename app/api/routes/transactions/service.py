@@ -20,27 +20,6 @@ from app.core.db_dependency import get_db
 from app.core.database import engine, metadata
 
 
-def decline_email_sender(user, transaction):
-    api_key = "cdcb4ffb9ac758e8750f5cf5bf07ac9f"
-    api_secret = "8ec6183bbee615d0d62b2c72bee814c4"
-    mailjet = Client(auth=(api_key, api_secret), version="v3.1")
-    data = {
-        "Messages": [
-            {
-                "From": {
-                    "Email": "kis.team.telerik@gmail.com",
-                    "Name": "MyPyWallet Admin",
-                },
-                "To": [{"Email": f"{user.email}", "Name": f"{user.fullname}"}],
-                "Subject": f"Declined Transaction",
-                "HTMLPart": f"<h3>Your transaction with ID:{transaction.id} was declined by the receiver</h3>",
-                "CustomID": f"UserID: {user.id}",
-            }
-        ]
-    }
-    mailjet.send.create(data=data)
-
-
 def create_draft_transaction(
     sender_account: str, transaction: TransactionDTO, db: Session
 ):
@@ -282,6 +261,8 @@ async def process_recurring_transaction(
             logging.info(
                 f"The account of {sender_account} does not have sufficient funds."
             )
+            sender = db.query(User).filter(User.username == sender_account).first()
+            notify_failed_recurring_transaction(sender, amount, receiver_account)
             raise InsufficientFundsError()
 
     except (ValueError, InsufficientFundsError) as e:
@@ -410,3 +391,45 @@ def get_trigger(recurring_interval: str, custom_days: int = None):
         "minute": IntervalTrigger(seconds=60),
     }
     return interval_mapping.get(recurring_interval)
+
+
+def decline_email_sender(user, transaction):
+    api_key = "cdcb4ffb9ac758e8750f5cf5bf07ac9f"
+    api_secret = "8ec6183bbee615d0d62b2c72bee814c4"
+    mailjet = Client(auth=(api_key, api_secret), version="v3.1")
+    data = {
+        "Messages": [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin",
+                },
+                "To": [{"Email": f"{user.email}", "Name": f"{user.fullname}"}],
+                "Subject": f"Declined Transaction",
+                "HTMLPart": f"<h3>Your transaction with ID:{transaction.id} was declined by the receiver</h3>",
+                "CustomID": f"UserID: {user.id}",
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
+
+
+def notify_failed_recurring_transaction(user, amount, receiver):
+    api_key = "cdcb4ffb9ac758e8750f5cf5bf07ac9f"
+    api_secret = "8ec6183bbee615d0d62b2c72bee814c4"
+    mailjet = Client(auth=(api_key, api_secret), version="v3.1")
+    data = {
+        "Messages": [
+            {
+                "From": {
+                    "Email": "kis.team.telerik@gmail.com",
+                    "Name": "MyPyWallet Admin",
+                },
+                "To": [{"Email": f"{user.email}", "Name": f"{user.fullname}"}],
+                "Subject": f"Failed Transaction",
+                "HTMLPart": f"<h3>Your recurring transaction of {amount} to {receiver.username} was interrupted due to insufficient funds!</h3>",
+                "CustomID": f"UserID: {user.id}",
+            }
+        ]
+    }
+    mailjet.send.create(data=data)
