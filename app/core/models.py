@@ -205,9 +205,10 @@ class Transaction(BaseTransaction):
 
 @dataclass
 class RecurringTransaction(BaseTransaction):
-    recurring_interval: Mapped[int] = mapped_column(
-        Integer, default=None, nullable=True
-    )  # (0 = daily, 1 = weekly, 2 = monthly)
+    recurring_interval: Mapped[str] = mapped_column(
+        String(length=25), default=None, nullable=True
+    )
+    job_id: Mapped[str] = mapped_column(String(length=50), default=None, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "recurring_transaction",
@@ -218,17 +219,19 @@ class RecurringTransaction(BaseTransaction):
         sender_account,
         receiver_account,
         amount,
+        job_id=None,
         category_id=None,
         description=None,
         transaction_date=None,
         recurring_interval=None,
         status="draft",
         is_flagged=False,
-        id=None,  # for testing purposes; needs to be resolved
+        id=None,
     ):
         self.sender_account = sender_account
         self.receiver_account = receiver_account
-        self.amount = amount  # Decimal(f"{amount:.2f}")
+        self.amount = amount
+        self.job_id = job_id
         self.category_id = category_id
         self.description = description
         self.transaction_date = transaction_date
@@ -236,7 +239,7 @@ class RecurringTransaction(BaseTransaction):
         self.recurring_interval = recurring_interval
         self.is_flagged = is_flagged
         if id is not None:
-            self.id = id  # for testing purposes, needs to be resolved
+            self.id = id
 
 
 @dataclass
