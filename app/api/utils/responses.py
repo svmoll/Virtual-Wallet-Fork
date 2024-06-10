@@ -69,14 +69,14 @@ class CategoryExistsError(Exception):
 
 
 class NoRelevantTransactionsError(Exception):
-    def __init__(self, message="There are no transactions in the relevant selected period.", status_code=400):
+    def __init__(self, message="There are no relevant transactions in the selected period.", status_code=400):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
 
 
 class GraphNotSavedError(Exception):
-    def __init__(self, message="Graph savefig failed.", status_code=500):
+    def __init__(self, message="Graph cannot be displayed.", status_code=500):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)

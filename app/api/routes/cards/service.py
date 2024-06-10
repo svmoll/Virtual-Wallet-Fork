@@ -1,13 +1,14 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, Depends
 from ....core.db_dependency import get_db
 from ..users.schemas import UserViewDTO
-from app.core.models import Card, User
-from app.api.utils.responses import DatabaseError
+from app.core.models import Card, User, Account
 from datetime import timedelta, date
 from jose import jwt
 import random
 import string
+import logging
 
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7"
@@ -53,24 +54,40 @@ def get_user_fullname(current_user, db: Session):
     return user
 
 
+def get_account_by_username(username: str, db: Session = Depends(get_db)):
+    account = db.query(Account).filter(Account.username == username).first()
+
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found!")
+
+    return account.id
+
+
 def create(current_user: UserViewDTO, db: Session):
     expiration_date = create_expiration_date()
     card_number = unique_card_number(db)
     cvv_number = create_cvv_number()
     user = get_user_fullname(current_user, db)
 
+    account_id = get_account_by_username(current_user.username,db)
+
     new_card = Card(
-        account_id=current_user.id,
+        account_id=account_id,
         card_number=card_number,
         expiration_date=expiration_date,
         card_holder=user.fullname,
         cvv=cvv_number,
     )
 
-    db.add(new_card)
-    db.commit()
-    db.refresh(new_card)
-    return new_card
+    try:
+        db.add(new_card)
+        db.commit()
+        db.refresh(new_card)
+
+        return new_card
+    except SQLAlchemyError as e:
+            db.rollback()
+            logging.error(f"{e}")
 
 
 def get_card_by_id(id:int, db: Session) -> Card:
@@ -84,13 +101,16 @@ def get_card_by_id(id:int, db: Session) -> Card:
 
 def delete(id:int, db: Session):
     card_to_delete = get_card_by_id(id, db)
-
-    db.delete(card_to_delete)
-    db.commit()
+    try:
+        db.delete(card_to_delete)
+        db.commit()
+    except SQLAlchemyError as e:
+            logging.error(f"{e}")
 
 
 def get_view(current_user: UserViewDTO, db: Session):
-    cards_list = db.query(Card).filter(Card.account_id==current_user.id).all()
+    account_id = get_account_by_username(current_user.username,db)
+    cards_list = db.query(Card).filter(Card.account_id==account_id).all()
 
     cards_list = [{
             "card_number": card.card_number,

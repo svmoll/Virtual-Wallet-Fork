@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from ....core.db_dependency import get_db
 from ..users.schemas import UserViewDTO
 from ...utils.responses import (
@@ -34,13 +35,15 @@ def withdraw_money_from_account(username: str, withdrawal_amount: Decimal, db: S
             amount=withdrawal_amount,
             transaction_date=datetime.now(pytz.utc),
         )
-        db.add(withdrawal)
-
         account.balance -= withdrawal_amount
 
-        db.commit()
-        db.refresh(account)
-
+        try:
+            db.add(withdrawal)
+            db.commit()
+            db.refresh(account)
+        except SQLAlchemyError as e:
+            logging.error(f"{e}")
+        
         formatted_balance = f"{account.balance:.2f}"
 
         return formatted_balance
@@ -71,10 +74,12 @@ def add_money_to_account(username: str, deposit_amount: Decimal, db: Session):
             amount=deposit_amount,
             transaction_date=datetime.now(pytz.utc),
         )
-        db.add(deposit)
-
-        db.commit()
-        db.refresh(account)
+        try:
+            db.add(deposit)
+            db.commit()
+            db.refresh(account)
+        except SQLAlchemyError as e:
+            logging.error(f"{e}")
 
         return account.balance
 

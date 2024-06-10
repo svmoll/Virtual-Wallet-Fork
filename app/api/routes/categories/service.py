@@ -67,9 +67,7 @@ def get_categories(user,db):
         ]
         return user_categories
     except DatabaseError as e:
-    # except SQLAlchemyError as e:
         logging.error(f"Database error occurred: {e}")
-        return []
     
 
 def generate_report(
@@ -110,7 +108,7 @@ def get_category_period_transactions(
     except Exception as e:
         # Handle exceptions
         logging.error(f"Error occurred: {e}")
-        return None
+
 
 
 def data_prep(results):

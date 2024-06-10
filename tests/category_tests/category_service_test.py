@@ -137,19 +137,23 @@ class CategoriesServiceShould(unittest.TestCase):
         self.assertEqual(result[1]['category_name'], 'Rent')
         mock_db.execute.assert_called_once()
 
-
-    def test_getCategories_returnsDatabaseError_whenUnknownErrorOccurs(self):
+    @patch('app.api.routes.categories.service.logging.error')
+    def test_getCategories_returnsDatabaseError_whenUnknownErrorOccurs(
+        self,
+        mock_logging_error
+        ):
+        # Arrange
         mock_user = fake_user()
         mock_db = fake_db()
 
         mock_db.execute.side_effect = DatabaseError("Database error occurred")
 
-        with unittest.mock.patch('app.api.routes.categories.service.logging.error'):
-            result = get_categories(mock_user, mock_db)
+        # Act
+        result = get_categories(mock_user, mock_db)
 
         # Assertions
-        self.assertEqual(result, []) 
-    
+        mock_logging_error.assert_called_once_with("Database error occurred: Database error occurred")
+        self.assertIsNone(result)
     
     @patch('app.api.routes.categories.service.get_category_period_transactions')
     @patch('app.api.routes.categories.service.data_prep')
@@ -220,7 +224,7 @@ class CategoriesServiceShould(unittest.TestCase):
                                             to_date, 
                                             )
         self.assertEqual(context.exception.status_code, 400)
-        self.assertEqual(context.exception.detail, "There are no transactions in the relevant selected period.")
+        self.assertEqual(context.exception.detail, "There are no relevant transactions in the selected period.")
 
 
     def test_dataPrep_returnsResultsInCorrectFormat(self):
@@ -283,8 +287,8 @@ class CategoriesServiceShould(unittest.TestCase):
                                 mock_db
                                 )
         self.assertEqual(context.exception.status_code, 500)
-        self.assertEqual(context.exception.detail, "Graph savefig failed.")
-        mock_logging.error.assert_called_once_with(f"Graph not saved: Graph savefig failed.")
+        self.assertEqual(context.exception.detail, "Graph cannot be displayed.")
+        mock_logging.error.assert_called_once_with(f"Graph not saved: Graph cannot be displayed.")
 
 
     @patch('app.api.routes.categories.service.logging')
