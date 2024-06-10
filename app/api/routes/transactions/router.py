@@ -14,6 +14,7 @@ from .service import (
     decline_incoming_transaction,
     create_recurring_transaction,
     cancelling_recurring_transaction,
+    view_recurring_transactions,
 )
 
 # from . import service
@@ -129,6 +130,21 @@ async def make_recurring_transaction(
     return create_recurring_transaction(
         current_user.username, recurring_transaction, db, scheduler
     )
+
+
+@transaction_router.get("/recurring_transactions/")
+def display_recurring_transactions(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db),
+):
+    transactions = view_recurring_transactions(current_user.username, db)
+
+    if len(transactions) < 1:
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"detail": "There are no recurring transactions at this moment."},
+        )
+    return transactions
 
 
 @transaction_router.delete("/recurring_transactions/")
