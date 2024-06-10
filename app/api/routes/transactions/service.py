@@ -274,8 +274,6 @@ async def process_recurring_transaction(
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
         db.rollback()
-    finally:
-        db.close()
 
 
 def cancelling_recurring_transaction(
@@ -414,7 +412,7 @@ def decline_email_sender(user, transaction):
     mailjet.send.create(data=data)
 
 
-def notify_failed_recurring_transaction(user, amount, receiver):
+def notify_failed_recurring_transaction(user: User, amount: Decimal, receiver: str):
     api_key = "cdcb4ffb9ac758e8750f5cf5bf07ac9f"
     api_secret = "8ec6183bbee615d0d62b2c72bee814c4"
     mailjet = Client(auth=(api_key, api_secret), version="v3.1")
@@ -427,7 +425,7 @@ def notify_failed_recurring_transaction(user, amount, receiver):
                 },
                 "To": [{"Email": f"{user.email}", "Name": f"{user.fullname}"}],
                 "Subject": f"Failed Transaction",
-                "HTMLPart": f"<h3>Your recurring transaction of {amount} to {receiver.username} was interrupted due to insufficient funds!</h3>",
+                "HTMLPart": f"<h3>Your recurring transaction of {amount} to {receiver} was interrupted due to insufficient funds!</h3>",
                 "CustomID": f"UserID: {user.id}",
             }
         ]
