@@ -211,6 +211,7 @@ def delete_contact(contact_username: str, user_username: str, db: Session = Depe
 
     if existing_contact:
         db.delete(existing_contact)
+        db.commit( )
         return {"success": True}
     else:
         raise HTTPException(status_code=404, detail="Contact does not exist")
