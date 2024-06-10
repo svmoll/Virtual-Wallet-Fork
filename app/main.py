@@ -71,5 +71,7 @@ app.include_router(card_router)
 app.include_router(account_router)
 app.include_router(admin_router)
 
+app.state.scheduler = scheduler
+
 if __name__ == "__main__":
     uvicorn.run(app="main:app", host="127.0.0.1", port=8000, reload=True)
