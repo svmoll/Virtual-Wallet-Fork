@@ -315,6 +315,33 @@ def cancelling_recurring_transaction(
     db.refresh(recurring_transaction)
 
 
+def view_recurring_transactions(username: str, db: Session):
+    jobs_table = Table("apscheduler_jobs", metadata, autoload_with=engine)
+
+    result = (
+        db.query(RecurringTransaction, jobs_table.c.next_run_time)
+        .filter_by(sender_account=username, status="ongoing")
+        .join(jobs_table, RecurringTransaction.job_id == jobs_table.c.id)
+        .all()
+    )
+
+    formatted_result = []
+    for rt, next_run_time in result:
+        formatted_result.append(
+            RecurringTransactionView(
+                id=rt.id,
+                receiver=rt.receiver_account,
+                amount=rt.amount,
+                category_id=rt.category_id,
+                description=rt.description,
+                recurring_interval=rt.recurring_interval,
+                next_run_time=datetime.fromtimestamp(float(next_run_time)).date(),
+            )
+        )
+
+    return formatted_result
+
+
 # Helper Functions
 def get_draft_transaction_by_id(
     transaction_id: int, sender_account: str, db: Session = Depends(get_db)
