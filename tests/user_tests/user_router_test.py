@@ -156,7 +156,7 @@ class UserRouter_Should(unittest.TestCase):
         mock_update_user.return_value = fake_user()
 
         # Act
-        response = update(fake_user_update_dto(), updated_user_dto, db)
+        response = update(fake_user_view(), fake_user_update_dto(), db)
 
         # Assert
         self.assertEqual(f"User testuser updated profile successfully.", response)
