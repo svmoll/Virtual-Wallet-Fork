@@ -12,6 +12,7 @@ from app.api.routes.transactions.router import (
     delete_draft_transaction,
     make_draft_transaction,
     edit_draft_transaction,
+    cancel_recurring_transaction,
 )
 import json
 
@@ -170,3 +171,30 @@ class TransactionRouter_Should(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch("app.core.db_dependency.get_db")
+    @patch("app.api.routes.transactions.router.cancelling_recurring_transaction")
+    @patch("app.api.auth_service.auth.get_user_or_raise_401")
+    async def test_cancel_recurring_transaction_success(
+        self, mock_get_user, mock_cancel_transaction, mock_get_db
+    ):
+        # Arrange
+        recurring_transaction_id = 1
+        current_user = MagicMock()
+        db = MagicMock()
+        scheduler = MagicMock()
+        request = MagicMock()
+        request.app.state.scheduler = scheduler
+        mock_get_user.return_value = current_user
+        mock_get_db.return_value = db
+
+        # Act
+        response = await cancel_recurring_transaction(
+            request, recurring_transaction_id, current_user
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        mock_cancel_transaction.assert_called_once_with(
+            recurring_transaction_id, current_user.username, db, scheduler
+        )

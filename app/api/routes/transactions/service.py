@@ -297,6 +297,24 @@ async def process_recurring_transaction(
         db.close()
 
 
+def cancelling_recurring_transaction(
+    recurring_transaction_id: int,
+    sender_account: str,
+    db: Session,
+    scheduler: AsyncIOScheduler,
+):
+    recurring_transaction = get_recurring_transaction_by_id(
+        recurring_transaction_id, sender_account, db
+    )
+
+    scheduler.remove_job(recurring_transaction.job_id)
+
+    recurring_transaction.status = "cancelled"
+    recurring_transaction.is_active = False
+    db.commit()
+    db.refresh(recurring_transaction)
+
+
 # Helper Functions
 def get_draft_transaction_by_id(
     transaction_id: int, sender_account: str, db: Session = Depends(get_db)
