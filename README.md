@@ -418,3 +418,4 @@ Confirms a user's access.
 
 
 ## Database Architecture
+![Screenshot_20240610_123502](https://github.com/K-I-S/Virtual-Wallet/assets/155480916/d3106fa0-7dd2-42c2-a595-0a33355145e7)
