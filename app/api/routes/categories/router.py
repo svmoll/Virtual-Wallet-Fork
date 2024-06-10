@@ -25,7 +25,7 @@ def create_category(
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={
-            "message": f"{created_category.name} category is created successfully"
+            "message": f"{created_category.name} category with id: {created_category.id} is created successfully."
         }
     )
 

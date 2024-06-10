@@ -27,7 +27,6 @@ def fake_card_json():
         ]
 
 
-
 def fake_db():
     return Mock()
 
@@ -123,8 +122,10 @@ class CardRouter_Should(unittest.TestCase):
 
     @patch("app.api.routes.cards.router.delete")
     @patch("app.api.routes.cards.router.get_card_by_id")
+    @patch("app.api.routes.cards.router.get_account_by_username")
     def test_deleteCardSuccess_returnsTheCorrectStatusCode_WhenSuccessful(
-        self, 
+        self,
+        mock_get_account_by_username,
         mock_get_card_by_id,
         mock_service_delete
         ):
@@ -143,6 +144,7 @@ class CardRouter_Should(unittest.TestCase):
         mock_get_card_by_id.account_id = 1
 
         mock_service_delete.return_value = None
+        mock_get_account_by_username.return_value = 1
 
         # Act
         response = delete_card(card_to_delete.id, mock_user, db)
