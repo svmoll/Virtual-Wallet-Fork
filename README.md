@@ -1,4 +1,4 @@
-# MyPyWallet: virtual wallet API
+# MyPyWallet: Virtual Wallet API
 
 ## Description:
 Back-end web application designed to help users manage their finances efficiently. It allows users to send and receive money, manage their cards, and perform various transactions seamlessly. The application supports user-to-user transactions.
@@ -410,6 +410,379 @@ Confirms a user's access.
 
 - **Status Code:** `200 OK`
 - **Body:** Confirmation message for granting user access.
+
+## 15. Deposit Money
+
+Allows the user to deposit a specified amount into their account.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/deposit`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field          | Type    | Description                              |
+| -------------- | ------- | ---------------------------------------- |
+| deposit_amount | decimal | The amount of money to deposit.          |
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object containing a message with the updated account balance.
+
+
+## 16. Withdraw Money
+
+Allows the user to withdraw a specified amount from their account.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/withdrawal`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field             | Type    | Description                              |
+| ----------------- | ------- | ---------------------------------------- |
+| withdrawal_amount | decimal | The amount of money to withdraw.         |
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object containing a message with the updated account balance.
+
+
+## 17. Create Draft Transaction
+
+Creates a draft transaction for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/draft`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field        | Type   | Description                   |
+| ------------ | ------ | ----------------------------- |
+| transaction  | object | The transaction details.      |
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object containing a message about the draft transaction details.
+
+## 18. Edit Draft Transaction
+
+Edits an existing draft transaction for the current user.
+
+### Request
+
+- **Method:** `PUT`
+- **Path:** `/{transaction_id}`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field              | Type   | Description                   |
+| ------------------ | ------ | ----------------------------- |
+| updated_transaction| object | The updated transaction details.|
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing a message about the updated draft transaction details.
+
+## 19. Confirm Transaction
+
+Confirms a draft transaction for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/{transaction_id}/confirm`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing a message about the pending transfer details.
+
+## 20. Delete Draft Transaction
+
+Deletes a draft transaction for the current user.
+
+### Request
+
+- **Method:** `DELETE`
+- **Path:** `/{transaction_id}`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `204 No Content`
+- **Body:** No content.
+
+## 21. Accept Transaction
+
+Accepts an incoming transaction for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/{transaction_id}/accept`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing a message about the updated balance.
+
+## 22. Decline Transaction 
+
+Declines an incoming transaction for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/{transaction_id}/decline`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `204 No Content`
+- **Body:** No content.
+
+## 23. Create a Recurring Transaction
+
+Creates a recurring transaction for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/recurring_transactions/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field                  | Type   | Description                      |
+| ---------------------- | ------ | -------------------------------- |
+| recurring_transaction  | object | The recurring transaction details.|
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object confirming the creation of the recurring transaction.
+
+## 24. Display Recurring Transactions
+
+Displays the list of recurring transactions for the current user.
+
+### Request
+
+- **Method:** `GET`
+- **Path:** `/recurring_transactions/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing the list of recurring transactions, or a message if there are no recurring transactions.
+
+## 25. Cancel Recurring Transaction
+
+Cancels a recurring transaction for the current user.
+
+### Request
+
+- **Method:** `DELETE`
+- **Path:** `/recurring_transactions/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Query Parameters
+
+| Parameter                  | Type | Description                       |
+| -------------------------- | ---- | --------------------------------- |
+| recurring_transaction_id   | int  | The ID of the recurring transaction to cancel.|
+
+### Response
+
+- **Status Code:** `204 No Content`
+- **Body:** No content.
+
+
+## 26. Create Card
+
+Creates a new card for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object containing a message confirming the creation of a new card for the user.
+
+## 27. View User's Cards
+
+Retrieves the list of cards associated with the current user.
+
+### Request
+
+- **Method:** `GET`
+- **Path:** `/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing a message and the list of cards associated with the user. If no cards are associated, the response contains a message indicating this.
+
+## 28. Delete Card
+
+Deletes a specified card of the current user.
+
+### Request
+
+- **Method:** `DELETE`
+- **Path:** `/{id}`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK` (if deletion is successful), `400 Bad Request` (if the card does not belong to the user)
+- **Body:** JSON object containing a message confirming the deletion of the card, or an error message if the card does not belong to the user.
+
+## 29. Create Category
+
+Creates a new category for the current user.
+
+### Request
+
+- **Method:** `POST`
+- **Path:** `/`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Request Body
+
+- **Content Type:** `application/json`
+
+| Field    | Type   | Description             |
+| -------- | ------ | ----------------------- |
+| category | object | The category to create. |
+
+### Response
+
+- **Status Code:** `201 Created`
+- **Body:** JSON object containing a message confirming the creation of the new category with its name and ID.
+
+## 30. View User's Categories
+
+Retrieves the list of categories associated with the current user.
+
+### Request
+
+- **Method:** `GET`
+- **Path:** `/list`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+### Response
+
+- **Status Code:** `200 OK`
+- **Body:** JSON object containing a message and the list of categories associated with the user. If no categories are associated, the response contains a message indicating this.
+
+## 31. Create Expense Report
+
+Generates a report of the user's expenses within a specified date range.
+
+### Request
+
+- **Method:** `GET`
+- **Path:** `/report`
+
+#### Headers
+
+- **Authorization:** `Bearer <token>`
+
+#### Query Parameters
+
+| Parameter | Type | Description                       |
+| --------- | ---- | --------------------------------- |
+| from_date | date | The start date for the report.    |
+| to_date   | date | The end date for the report.      |
+
+### Response
+
+- **Status Code:** `201 Created` (if the report is successfully generated), `204 No Content` (if the report could not be generated)
+- **Body:** JSON object containing a message indicating whether the report was successfully generated.
+
+
+
 
 
 ## File Architecture
