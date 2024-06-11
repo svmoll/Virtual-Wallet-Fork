@@ -241,8 +241,6 @@ def create_recurring_transaction(
         db.rollback()
         logging.error(f"An unexpected error occurred: {e}")
         raise
-    finally:
-        db.close()
 
 
 async def process_recurring_transaction(
