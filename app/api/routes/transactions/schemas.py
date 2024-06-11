@@ -8,7 +8,7 @@ from datetime import date, datetime
 class TransactionDTO(BaseModel):
     receiver_account: str
     amount: Decimal
-    category_id: int | None = None
+    category_id: Optional[int] = 1  # default category "Other"
     description: str | None = None
 
 
@@ -31,3 +31,13 @@ class RecurringTransactionView(BaseModel):
     description: Optional[str]
     recurring_interval: str
     next_run_time: date
+
+
+class TransactionView(BaseModel):
+    id: int
+    sender: str
+    receiver: str
+    amount: Decimal
+    transaction_date: datetime | None = None
+    type: str
+    status: str
