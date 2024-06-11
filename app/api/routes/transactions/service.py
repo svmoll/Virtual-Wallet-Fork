@@ -1,5 +1,6 @@
 from datetime import datetime, date, time
 import pytz
+from enum import Enum
 from decimal import Decimal
 from mailjet_rest import Client
 import logging
@@ -8,16 +9,32 @@ from decimal import Decimal
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import desc, select, Table
-from .schemas import TransactionDTO, RecurringTransactionDTO, RecurringTransactionView
+from .schemas import (
+    TransactionDTO,
+    RecurringTransactionDTO,
+    RecurringTransactionView,
+    TransactionView,
+)
 from ...utils.responses import DatabaseError, InsufficientFundsError
 from sqlalchemy.orm import Session
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, Depends
-from app.core.models import Transaction, User, RecurringTransaction, Account
+from app.core.models import (
+    Transaction,
+    User,
+    RecurringTransaction,
+    Account,
+    BaseTransaction,
+)
 from ..accounts.service import get_account_by_username
 from app.core.db_dependency import get_db
 from app.core.database import engine, metadata
+
+
+class Direction(str, Enum):
+    outgoing = "outgoing"
+    incoming = "incoming"
 
 
 def create_draft_transaction(
@@ -319,6 +336,70 @@ def view_recurring_transactions(username: str, db: Session):
         )
 
     return formatted_result
+
+
+def view_transactions(
+    username,
+    receiver,
+    period,
+    direction,
+    sort,
+    page,
+    limit,
+    db: Session = Depends(get_db),
+):
+    query = db.query(BaseTransaction).filter(
+        BaseTransaction.type.in_(["transaction", "withdrawal", "deposit"])
+    )
+
+    if receiver:
+        user = db.query(User).filter_by(username=receiver).first()
+        if not user:
+            raise HTTPException(
+                status_code=404, detail="User with that username was not found"
+            )
+
+    # Filtering based on query parameters
+    if receiver:
+        query = query.filter(Transaction.receiver_account == receiver)
+    # if period:
+    #     to be implemented in the future
+    if direction == Direction.incoming:
+        query = query.filter(Transaction.receiver_account == username)
+    if direction == Direction.outgoing:
+        query = query.filter(Transaction.sender_account == username)
+
+    # Sorting
+    if sort:
+        if sort == "date_asc":
+            query = query.order_by(Transaction.transaction_date.asc())
+        elif sort == "date_desc":
+            query = query.order_by(Transaction.transaction_date.desc())
+        elif sort == "amount_asc":
+            query = query.order_by(Transaction.amount.asc())
+        elif sort == "amount_desc":
+            query = query.order_by(Transaction.amount.desc())
+
+    if page is not None and limit is not None:
+        offset = (page - 1) * limit
+        query = query.offset(offset).limit(limit)
+
+    transactions = query.all()
+
+    transactions_views = [
+        TransactionView(
+            id=transaction.id,
+            sender=transaction.sender_account,
+            receiver=transaction.receiver_account,
+            amount=transaction.amount,
+            transaction_date=transaction.transaction_date,
+            type=transaction.type,
+            status=transaction.status,
+        )
+        for transaction in transactions
+    ]
+
+    return transactions_views
 
 
 # Helper Functions
