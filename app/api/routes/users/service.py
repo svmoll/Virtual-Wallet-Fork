@@ -150,11 +150,14 @@ def update_user(id, update_info: UpdateUserDTO, db: Session = Depends(get_db)):
 def get_user(id, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(id=id).first()
 
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    account = db.query(Account).filter_by(username=user.username).first()
 
     user = UserShowDTO(
         username=user.username,
+        balance=account.balance,
         password="********",
         email=user.email,
         phone_number=user.phone_number,
