@@ -58,7 +58,7 @@ class CategoriesRouter_Should(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         response_body = json.loads(response.body.decode('utf-8'))
         self.assertEqual(response_body,
-                         {'message': f"{mock_category.name} category is created successfully"}
+                         {'message': f"{mock_category.name} category with id: {mock_category.id} is created successfully."}
                          )
         mock_create.assert_called_once_with(mock_category, mock_db)
 

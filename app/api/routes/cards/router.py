@@ -4,7 +4,7 @@ from . import service
 from ....core.db_dependency import get_db
 from sqlalchemy.orm import Session
 from ..users.schemas import UserViewDTO
-from .service import create, delete, get_card_by_id, get_view
+from .service import create, delete, get_card_by_id, get_view, get_account_by_username
 from ...auth_service import auth
 from typing import Annotated
 from ...utils import responses
@@ -61,7 +61,9 @@ def delete_card(
 # To determine how to handle when card expires?
     existing_card = get_card_by_id(id, db)
 
-    if existing_card.account_id == current_user.id:
+    account_id = get_account_by_username(current_user.username,db)
+
+    if existing_card.account_id == account_id:
         delete(id, db)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
