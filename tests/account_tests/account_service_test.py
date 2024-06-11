@@ -1,8 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
 from app.core.models import Account, Withdrawal
-
-# from app.api.routes.accounts.schemas import AccountViewDTO
 from fastapi import HTTPException
 from app.api.routes.accounts.service import (
     add_money_to_account,
@@ -13,10 +11,6 @@ from app.api.routes.accounts.service import (
 
 def fake_account():
     return Account(id=1, username="Grippen", balance=1234.56, is_blocked=0)
-
-
-# def fake_accountdto():
-#     return AccountViewDTO(id=1, username="Grippen", balance=1234.56, is_blocked=False)
 
 
 def fake_db():
