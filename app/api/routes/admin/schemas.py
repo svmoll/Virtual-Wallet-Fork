@@ -8,6 +8,7 @@ class UsersfrimlistDTO(BaseModel):
     email: str
     password: str
 
+
 class TransactionViewDTO(BaseModel):
     id: int
     sender: str
