@@ -37,6 +37,11 @@ class Direction(str, Enum):
     incoming = "incoming"
 
 
+# TimeZone Settings
+utc_time = datetime.now(pytz.utc)
+desired_timezone = pytz.timezone("Europe/Sofia")
+
+
 def create_draft_transaction(
     sender_account: str, transaction: TransactionDTO, db: Session
 ):
@@ -149,7 +154,9 @@ def accept_incoming_transaction(
     account.balance = account.balance + incoming_transaction.amount
 
     incoming_transaction.status = "completed"
-    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+    incoming_transaction.transaction_date = datetime.now(pytz.utc).astimezone(
+        desired_timezone
+    )
 
     try:
         db.commit()
@@ -171,7 +178,9 @@ def decline_incoming_transaction(
 
     sender_account.balance += incoming_transaction.amount
     incoming_transaction.status = "declined"
-    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+    incoming_transaction.transaction_date = datetime.now(pytz.utc).astimezone(
+        desired_timezone
+    )
     sender = (
         db.query(User)
         .filter(User.username == incoming_transaction.sender_account)
@@ -268,7 +277,7 @@ async def process_recurring_transaction(
                 category_id=category_id,
                 description=description,
                 status="completed",
-                transaction_date=datetime.now(pytz.utc),
+                transaction_date=datetime.now(pytz.utc).astimezone(desired_timezone),
             )
             db.add(transaction)
             db.commit()
