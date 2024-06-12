@@ -63,12 +63,12 @@ async def lifespan(app: FastAPI):
 # Initialize the FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(category_router)
-app.include_router(user_router)
-app.include_router(transaction_router)
 app.include_router(home_router)
+app.include_router(user_router)
 app.include_router(card_router)
 app.include_router(account_router)
+app.include_router(transaction_router)
+app.include_router(category_router)
 app.include_router(admin_router)
 
 app.state.scheduler = scheduler
