@@ -8,7 +8,7 @@ from app.core.database import SessionLocal
 from decimal import Decimal
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import desc, select, Table
+from sqlalchemy import desc, select, Table, or_
 from .schemas import (
     TransactionDTO,
     RecurringTransactionDTO,
@@ -356,7 +356,11 @@ def view_transactions(
     db: Session = Depends(get_db),
 ):
     query = db.query(BaseTransaction).filter(
-        BaseTransaction.type.in_(["transaction", "withdrawal", "deposit"])
+        BaseTransaction.type.in_(["transaction", "withdrawal", "deposit"]),
+        or_(
+            BaseTransaction.sender_account == username,
+            BaseTransaction.receiver_account == username,
+        ),
     )
 
     if receiver:
@@ -474,7 +478,7 @@ def get_trigger(recurring_interval: str, custom_days: int = None):
         "monthly": CronTrigger(day=1),
         "yearly": CronTrigger(year="*"),
         "custom": IntervalTrigger(days=custom_days) if custom_days else None,
-        "minute": IntervalTrigger(seconds=60),
+        "30seconds": IntervalTrigger(seconds=30),
     }
     return interval_mapping.get(recurring_interval)
 

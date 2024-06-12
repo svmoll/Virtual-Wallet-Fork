@@ -14,7 +14,7 @@ class TransactionDTO(BaseModel):
 
 class RecurringTransactionDTO(TransactionDTO):
     recurring_interval: Literal[
-        "daily", "weekly", "monthly", "yearly", "minute", "custom"
+        "daily", "weekly", "monthly", "yearly", "30seconds", "custom"
     ]
     custom_days: Optional[int] = Field(None, description="Custom interval in days")
     start_date: Optional[date] = Field(
