@@ -8,7 +8,7 @@ from app.core.database import SessionLocal
 from decimal import Decimal
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import desc, select, Table
+from sqlalchemy import desc, select, Table, or_
 from .schemas import (
     TransactionDTO,
     RecurringTransactionDTO,
@@ -35,6 +35,11 @@ from app.core.database import engine, metadata
 class Direction(str, Enum):
     outgoing = "outgoing"
     incoming = "incoming"
+
+
+# TimeZone Settings
+utc_time = datetime.now(pytz.utc)
+desired_timezone = pytz.timezone("Europe/Sofia")
 
 
 def create_draft_transaction(
@@ -149,7 +154,9 @@ def accept_incoming_transaction(
     account.balance = account.balance + incoming_transaction.amount
 
     incoming_transaction.status = "completed"
-    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+    incoming_transaction.transaction_date = datetime.now(pytz.utc).astimezone(
+        desired_timezone
+    )
 
     try:
         db.commit()
@@ -171,7 +178,9 @@ def decline_incoming_transaction(
 
     sender_account.balance += incoming_transaction.amount
     incoming_transaction.status = "declined"
-    incoming_transaction.transaction_date = datetime.now(pytz.utc)
+    incoming_transaction.transaction_date = datetime.now(pytz.utc).astimezone(
+        desired_timezone
+    )
     sender = (
         db.query(User)
         .filter(User.username == incoming_transaction.sender_account)
@@ -268,7 +277,7 @@ async def process_recurring_transaction(
                 category_id=category_id,
                 description=description,
                 status="completed",
-                transaction_date=datetime.now(pytz.utc),
+                transaction_date=datetime.now(pytz.utc).astimezone(desired_timezone),
             )
             db.add(transaction)
             db.commit()
@@ -347,7 +356,11 @@ def view_transactions(
     db: Session = Depends(get_db),
 ):
     query = db.query(BaseTransaction).filter(
-        BaseTransaction.type.in_(["transaction", "withdrawal", "deposit"])
+        BaseTransaction.type.in_(["transaction", "withdrawal", "deposit"]),
+        or_(
+            BaseTransaction.sender_account == username,
+            BaseTransaction.receiver_account == username,
+        ),
     )
 
     if receiver:
@@ -465,7 +478,7 @@ def get_trigger(recurring_interval: str, custom_days: int = None):
         "monthly": CronTrigger(day=1),
         "yearly": CronTrigger(year="*"),
         "custom": IntervalTrigger(days=custom_days) if custom_days else None,
-        "minute": IntervalTrigger(seconds=60),
+        "30seconds": IntervalTrigger(seconds=30),
     }
     return interval_mapping.get(recurring_interval)
 

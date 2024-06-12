@@ -312,7 +312,8 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(result, 33.30)
         self.assertEqual(transaction.status, "completed")
         self.assertTrue(transaction.transaction_date.tzinfo is not None)
-        self.assertEqual(transaction.transaction_date.tzinfo, pytz.utc)
+        expected_datetime = fixed_datetime.astimezone(pytz.timezone("Europe/Sofia"))
+        self.assertEqual(transaction.transaction_date, expected_datetime)
 
     @patch("app.api.routes.transactions.service.get_account_by_username")
     @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
@@ -341,7 +342,8 @@ class TransactionsServiceShould(unittest.TestCase):
         self.assertEqual(result, None)
         self.assertEqual(transaction.status, "declined")
         self.assertTrue(transaction.transaction_date.tzinfo is not None)
-        self.assertEqual(transaction.transaction_date.tzinfo, pytz.utc)
+        expected_datetime = fixed_datetime.astimezone(pytz.timezone("Europe/Sofia"))
+        self.assertEqual(transaction.transaction_date, expected_datetime)
 
     @patch("app.api.routes.transactions.service.get_account_by_username")
     @patch("app.api.routes.transactions.service.get_incoming_transaction_by_id")
