@@ -37,6 +37,7 @@ def fake_user_update_dto():
 def fake_user_show_dto():
     return UserShowDTO(
         username="tester",
+        balance = 100.00,
         password="********",
         email="email@example.com",
         phone_number="1234567890",
@@ -472,6 +473,7 @@ class UsrServices_Should(unittest.TestCase):
         db.query = Mock( )
         db.filter_by = Mock( )
         db.delete = Mock()
+        db.commit = Mock()
         user = fake_user_dto()
         user.username = "newcontact"
         db.query.return_value.filter.return_value.first.return_value = True

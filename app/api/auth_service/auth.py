@@ -52,7 +52,6 @@ def decode_access_token(token: str):
 
 def is_authenticated(session: Session, token: str):
     username, exp = decode_access_token(token)
-
     try:
         stmt = select(User).where(User.username == username)
         user = session.execute(stmt).scalar_one()
@@ -81,6 +80,8 @@ def get_user_or_raise_401(
             detail="You Are logged out, please log in again to proceed",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if is_restricted(from_token(session, token), session):
+        raise HTTPException(status_code=401, detail="You are currently restricted to this service")
     try:
         is_authenticated(session, token)
         return from_token(session, token)
@@ -103,3 +104,14 @@ def is_token_blacklisted(token: str) -> bool:
 
 def get_token(token: str = Depends(oauth2_scheme)):
     return token
+
+def is_restricted(user: UserViewDTO, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=user.id).first()
+    if user.is_restricted == 1:
+        return True
+
+
+
+
+
+

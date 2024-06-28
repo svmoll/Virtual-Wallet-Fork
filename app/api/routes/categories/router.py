@@ -6,7 +6,9 @@ from ..users.schemas import UserViewDTO
 from ...auth_service import auth
 from .schemas import CreateCategoryDTO
 from fastapi.responses import JSONResponse
-from .service import create, get_categories
+from .service import create, get_categories, generate_report
+from datetime import date
+import logging
 
 
 category_router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -23,7 +25,7 @@ def create_category(
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={
-            "message": f"{created_category.name} category is created successfully"
+            "message": f"{created_category.name} category with id: {created_category.id} is created successfully."
         }
     )
 
@@ -51,3 +53,29 @@ def get_user_categories(
             }
         )
     
+
+@category_router.get("/report")
+def create_user_report(
+    current_user: Annotated[UserViewDTO, Depends(auth.get_user_or_raise_401)],
+    db: Session = Depends(get_db),
+    from_date: date = '2024-01-01',
+    to_date: date = '2024-07-01'
+    ):
+    generated_report = generate_report(current_user, db, from_date, to_date)
+    print(generated_report)
+    logging.info(f'Generated report: {generated_report}')
+    
+    if generated_report:
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": f"Your expenses are summarised in the graph."
+            }
+        )
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_204_NO_CONTENT,
+            content={
+                "message": f"Report could not be generated."
+            }
+        )
